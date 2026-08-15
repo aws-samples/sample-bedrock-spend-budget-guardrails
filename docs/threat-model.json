@@ -1,0 +1,452 @@
+{
+  "schema": 1,
+  "applicationInfo": {
+    "name": "Threat Model Export",
+    "description": "Bedrock Budget Guard (BBG) is an AWS-native, multi-account cost-control system that meters Amazon Bedrock spend per IAM principal and automatically attaches a scoped IAM Deny policy when a principal exceeds its USD budget or request/token rate limit. It ingests Bedrock invocation logs + CloudTrail data events (home account directly, member accounts via CloudWatch Logs subscription -> cross-account EventBridge), joins usage to the calling IAM principal, accumulates spend in DynamoDB, and a DynamoDB-stream-driven enforcement Lambda builds and attaches a bbg-deny-* customer-managed policy. Enforcement reaches member accounts by assuming a bbg-enforcement role provisioned via CloudFormation StackSets. An admin SPA (CloudFront+S3, WAFv2, Cognito passkey auth, API Gateway HTTP API with a Cognito JWT authorizer) lets scoped admins manage budgets, defaults, enrollment, users, and pricing overrides. BBG stores spend metadata + budgets, NOT customer prompt/response content. This threat model is published alongside the sample so adopters can see the analysis."
+  },
+  "architecture": {
+    "description": ""
+  },
+  "dataflow": {
+    "description": ""
+  },
+  "assumptions": [
+    {
+      "id": "A001",
+      "numericId": 1,
+      "content": "BBG's home account and each enrolled member account are within the same AWS Organization and under common trust; the home account is a trusted security/governance account. Member accounts deploy the bbg-enforcement role via StackSets.",
+      "displayOrder": 1,
+      "metadata": []
+    },
+    {
+      "id": "A002",
+      "numericId": 2,
+      "content": "The worst realistic impact of a BBG compromise is availability/cost (denying legitimate Bedrock access, or failing to deny an over-budget principal so spend continues) rather than a confidentiality breach — BBG stores spend metadata + budgets, not customer content or Bedrock prompt/response bodies.",
+      "displayOrder": 2,
+      "metadata": []
+    },
+    {
+      "id": "A003",
+      "numericId": 3,
+      "content": "Residual-risk calibration (A002): with no customer content stored, residual severities are graded against cost/availability. The 5 originally code-mitigated threats (ENF-3, POL-2, AUZ-3, API-2, EDGE-1) were resolved by existing code; the other 7 (ENF-1, ENF-2, POL-1, AUZ-1, AUZ-2, API-1, MET-1) were remediated before the initial public release and independently re-verified against the fixed code — all 12 threats are now Resolved. None is Critical because worst-case is bounded to cost overrun or bounded Bedrock denial, not a confidentiality breach.",
+      "displayOrder": 3,
+      "metadata": []
+    }
+  ],
+  "mitigations": [
+    {
+      "id": "268ce4a1-b40a-4b50-a75d-b16ffc5a7031",
+      "numericId": 1,
+      "status": "mitigationResolved",
+      "content": "ENF-1 (remediated pre-release): Member bbg-enforcement role permissions are tightly scoped to bbg-deny-* only; the AssumeRolePolicyDocument now also carries an aws:PrincipalOrgID StringEquals condition (Org ID auto-detected at synth; allowlist-only fallback with a synth warning when unavailable) — member-stackset-stack.ts:154-171,240-245.",
+      "displayOrder": 1,
+      "metadata": []
+    },
+    {
+      "id": "ecc5779f-1bea-44a5-ac12-5c1d207854b2",
+      "numericId": 2,
+      "status": "mitigationResolved",
+      "content": "ENF-2 (remediated pre-release): Operator kill-switch bbg:pauseEnforcement -> ENFORCEMENT_PAUSED env makes the enforcement Lambda skip new deny attaches (emits EnforcementPaused, no-ops) — enforcement/index.ts:366-375; enforcement-stack.ts:43-44,69. EnforcementAppliedRate alarm (5-min Sum > 25, SNS-wired) pages on mass-enforcement — observability-stack.ts:92-98,166-175,261-263.",
+      "displayOrder": 2,
+      "metadata": []
+    },
+    {
+      "id": "360c8ff0-a502-40c4-9c80-e808473c037a",
+      "numericId": 3,
+      "status": "mitigationResolved",
+      "content": "ENF-3: Detach failures at rollover are retried, alarmed, and the stuck-attach path emits a dedicated metric with a runbook.",
+      "displayOrder": 3,
+      "metadata": []
+    },
+    {
+      "id": "5d41651c-20b9-41e5-a88f-d3405bcb38d8",
+      "numericId": 4,
+      "status": "mitigationResolved",
+      "content": "POL-1 (remediated pre-release): Deny policy covers FM invoke/converse/stream, inference-profile, KB retrieve, agent invoke, and standalone guardrails; FM_ACTIONS now also denies bedrock:StartAsyncInvoke, CreateModelInvocationJob (batch), and InvokeModelWithBidirectionalStream — policies.ts:37-39.",
+      "displayOrder": 4,
+      "metadata": []
+    },
+    {
+      "id": "95c14a67-c33b-4558-b82f-ce4554e7370f",
+      "numericId": 5,
+      "status": "mitigationIdentified",
+      "content": "POL-2: Deny policy documents are small in practice; monitor for the IAM 6KB managed-policy limit on large multi-profile targets.",
+      "displayOrder": 5,
+      "metadata": []
+    },
+    {
+      "id": "59c46a01-acf5-402c-ae64-d8ff776a02ef",
+      "numericId": 6,
+      "status": "mitigationResolved",
+      "content": "AUZ-1 (remediated pre-release): Every admin write derives caller scope server-side and gates cross-account writes with scopeAllows; global routes are wildcard-only. The fail-open is fixed: API Lambdas set AWS_ACCOUNT_ID (api-stack.ts:73) and scopeGuardResult() rejects (403) a non-wildcard caller when the target account is empty/unparseable, applied at all 5 write sites — api/budgets/index.ts:183-197,366-369,450-453,502-505,524-527,558-561.",
+      "displayOrder": 6,
+      "metadata": []
+    },
+    {
+      "id": "d5e4f88d-32e8-417d-865a-a044b3b08def",
+      "numericId": 7,
+      "status": "mitigationResolved",
+      "content": "AUZ-2 (remediated pre-release): Legacy Admins->wildcard fallback removed from deriveScope (pre-token-gen/index.ts:26-35) and the callerScope compat fallback (shared/api.ts:80-87); an Admins-only user now derives empty scope. Confirmed the BBG-Admin-Wildcard group membership in both live pools before removal.",
+      "displayOrder": 7,
+      "metadata": []
+    },
+    {
+      "id": "172f10d5-be9e-4f6c-9dd6-5341f1bc8b61",
+      "numericId": 8,
+      "status": "mitigationResolved",
+      "content": "AUZ-3: bbg:scope is server-derived by the Cognito pre-token-gen trigger and delivered in a Cognito-signed JWT the client cannot forge; API GW validates issuer+audience.",
+      "displayOrder": 8,
+      "metadata": []
+    },
+    {
+      "id": "55b86663-d4b2-4e14-b024-8fbe76b0abb6",
+      "numericId": 9,
+      "status": "mitigationResolved",
+      "content": "API-1 (remediated pre-release): isValidTarget() rejects (400) any budget target not matching model#<id>/model#*/profile#<arn>/profile#* on both POST and PUT before persisting, so resourcesFor() never falls back to Resource:'*' — api/budgets/index.ts:125-130,356-360,443-447.",
+      "displayOrder": 9,
+      "metadata": []
+    },
+    {
+      "id": "d2279f5d-1e1b-4fa9-8a08-d06410ceb686",
+      "numericId": 10,
+      "status": "mitigationResolved",
+      "content": "API-2: Every admin write emits a structured kind:audit log line + CrossAccountWriteAudit metric.",
+      "displayOrder": 10,
+      "metadata": []
+    },
+    {
+      "id": "2887a684-93e9-4c7f-8ae2-d2c199290bdf",
+      "numericId": 11,
+      "status": "mitigationResolved",
+      "content": "MET-1 (remediated pre-release): Metering is idempotent, joins late-arriving identities via a pending queue, forwards cross-region, and is cross-checked by the CUR reconciler. MeterUnjoinedAlarm and ReconciliationDeltaAlarm both exist and are SNS-wired with MET-1 runbook descriptions — observability-stack.ts:101-116,132-149,261-263.",
+      "displayOrder": 11,
+      "metadata": []
+    },
+    {
+      "id": "87174581-77e2-47d3-8165-ef85cdb16ef7",
+      "numericId": 12,
+      "status": "mitigationResolved",
+      "content": "EDGE-1: Public config.json contains only non-secret client config; CloudFront is fronted by WAFv2 managed rules + per-IP rate limit.",
+      "displayOrder": 12,
+      "metadata": []
+    }
+  ],
+  "assumptionLinks": [],
+  "mitigationLinks": [
+    {
+      "linkedId": "c7188abf-666a-4f83-a6fc-e11529ac1de4",
+      "mitigationId": "268ce4a1-b40a-4b50-a75d-b16ffc5a7031"
+    },
+    {
+      "linkedId": "c4cc26e8-09cc-48c9-a825-c102b69a9879",
+      "mitigationId": "ecc5779f-1bea-44a5-ac12-5c1d207854b2"
+    },
+    {
+      "linkedId": "2a19208c-8be0-49cc-8aba-0ae17f60cd12",
+      "mitigationId": "360c8ff0-a502-40c4-9c80-e808473c037a"
+    },
+    {
+      "linkedId": "7e0af631-3515-4dfd-a624-907ceab7c7e8",
+      "mitigationId": "5d41651c-20b9-41e5-a88f-d3405bcb38d8"
+    },
+    {
+      "linkedId": "c1a56afd-2679-4f4d-8d9d-b87ea5da5fac",
+      "mitigationId": "95c14a67-c33b-4558-b82f-ce4554e7370f"
+    },
+    {
+      "linkedId": "531012ac-8714-4c39-997b-b053c4f4ee98",
+      "mitigationId": "59c46a01-acf5-402c-ae64-d8ff776a02ef"
+    },
+    {
+      "linkedId": "1bff76a3-11f3-4079-bd19-f3e4dca4028c",
+      "mitigationId": "d5e4f88d-32e8-417d-865a-a044b3b08def"
+    },
+    {
+      "linkedId": "37870d05-c2f9-44fe-8d72-9774132e1332",
+      "mitigationId": "172f10d5-be9e-4f6c-9dd6-5341f1bc8b61"
+    },
+    {
+      "linkedId": "bdded57f-c003-4973-b971-4a58c39efb1c",
+      "mitigationId": "55b86663-d4b2-4e14-b024-8fbe76b0abb6"
+    },
+    {
+      "linkedId": "818f6bdd-472e-4501-801d-4942fcffeeeb",
+      "mitigationId": "d2279f5d-1e1b-4fa9-8a08-d06410ceb686"
+    },
+    {
+      "linkedId": "49c2b654-72bc-459d-84b4-dae3be97d592",
+      "mitigationId": "2887a684-93e9-4c7f-8ae2-d2c199290bdf"
+    },
+    {
+      "linkedId": "e6eae4a8-c205-49a0-b3eb-ca1210804d29",
+      "mitigationId": "87174581-77e2-47d3-8165-ef85cdb16ef7"
+    }
+  ],
+  "threats": [
+    {
+      "id": "c7188abf-666a-4f83-a6fc-e11529ac1de4",
+      "numericId": 1,
+      "threatSource": "An actor able to assume the member bbg-enforcement role (e.g. via a compromised home enforcement Lambda role, or a mis-scoped trust)",
+      "prerequisites": "Ability to call sts:AssumeRole on arn:...:role/bbg-enforcement in a member account",
+      "threatAction": "Attach a bbg-deny-* Bedrock Deny to any principal in the member account, or abuse the role's IAM policy-management perms",
+      "threatImpact": "Denial of Bedrock for arbitrary member principals (availability). Cannot exfiltrate data or touch non-bbg-deny-* policies.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A010"
+      ],
+      "statement": "A An actor able to assume the member bbg-enforcement role (e.g. via a compromised home enforcement Lambda role, or a mis-scoped trust) Ability to call sts:AssumeRole on arn:...:role/bbg-enforcement in a member account can Attach a bbg-deny-* Bedrock Deny to any principal in the member account, or abuse the role's IAM policy-management perms, which leads to Denial of Bedrock for arbitrary member principals (availability). Cannot exfiltrate data or touch non-bbg-deny-* policies.",
+      "displayOrder": 1,
+      "status": "threatResolved",
+      "tags": [
+        "ENF-1",
+        "boundary:B1",
+        "cross-account",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "c4cc26e8-09cc-48c9-a825-c102b69a9879",
+      "numericId": 2,
+      "threatSource": "Compromised or buggy home-account enforcement Lambda (supply chain, bad deploy)",
+      "prerequisites": "Control of / a defect in the enforcement Lambda; RUNNING_SPEND stream events flowing",
+      "threatAction": "Attach Bedrock Deny policies at scale across every enrolled account; no volume rate-limit or kill-switch on enforcement",
+      "threatImpact": "Org-wide Bedrock outage (mass availability DoS) - the catastrophic case of assumption A001.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A010"
+      ],
+      "statement": "A Compromised or buggy home-account enforcement Lambda (supply chain, bad deploy) Control of / a defect in the enforcement Lambda; RUNNING_SPEND stream events flowing can Attach Bedrock Deny policies at scale across every enrolled account; no volume rate-limit or kill-switch on enforcement, which leads to Org-wide Bedrock outage (mass availability DoS) - the catastrophic case of assumption A001.",
+      "displayOrder": 2,
+      "status": "threatResolved",
+      "tags": [
+        "ENF-2",
+        "boundary:B1",
+        "kill-switch",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "2a19208c-8be0-49cc-8aba-0ae17f60cd12",
+      "numericId": 3,
+      "threatSource": "Operational failure at period rollover (IAM throttle, transient error) or a stuck attach",
+      "prerequisites": "A bbg-deny-* policy attached; detach/delete fails during period-rollover or the attach is stamped-but-not-attached",
+      "threatAction": "Deny remains attached after the budget period ends (or spend row stamped but principal still blocked/unblocked incorrectly)",
+      "threatImpact": "A legitimate principal is stuck locked out of Bedrock past the reset (availability). Bounded to affected principals.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A009"
+      ],
+      "statement": "A Operational failure at period rollover (IAM throttle, transient error) or a stuck attach A bbg-deny-* policy attached; detach/delete fails during period-rollover or the attach is stamped-but-not-attached can Deny remains attached after the budget period ends (or spend row stamped but principal still blocked/unblocked incorrectly), which leads to A legitimate principal is stuck locked out of Bedrock past the reset (availability). Bounded to affected principals.",
+      "displayOrder": 3,
+      "status": "threatResolved",
+      "tags": [
+        "ENF-3",
+        "boundary:B1",
+        "stuck-lockout",
+        "code-mitigated"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "7e0af631-3515-4dfd-a624-907ceab7c7e8",
+      "numericId": 4,
+      "threatSource": "A metered principal that has exceeded its budget and had a bbg-deny-* policy attached",
+      "prerequisites": "A Bedrock spend path (action/resource/region) not covered by the deny policy statement",
+      "threatAction": "Keep invoking Bedrock via an un-denied action (e.g. StartAsyncInvoke, batch CreateModelInvocationJob, bidirectional stream) or ARN",
+      "threatImpact": "Budget-exceeded principal keeps spending (cost overrun) - the enforcement control is bypassed.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A009"
+      ],
+      "statement": "A A metered principal that has exceeded its budget and had a bbg-deny-* policy attached A Bedrock spend path (action/resource/region) not covered by the deny policy statement can Keep invoking Bedrock via an un-denied action (e.g. StartAsyncInvoke, batch CreateModelInvocationJob, bidirectional stream) or ARN, which leads to Budget-exceeded principal keeps spending (cost overrun) - the enforcement control is bypassed.",
+      "displayOrder": 4,
+      "status": "threatResolved",
+      "tags": [
+        "POL-1",
+        "boundary:B2",
+        "deny-coverage",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "c1a56afd-2679-4f4d-8d9d-b87ea5da5fac",
+      "numericId": 5,
+      "threatSource": "A metered principal whose deny target expands to a very large resource list (many inference profiles / wildcard)",
+      "prerequisites": "Enough associated profile ARNs that the policy document approaches the IAM managed-policy 6KB size limit",
+      "threatAction": "Cause the deny policy resource list to be truncated / the CreatePolicy call to fail, leaving the principal partially or un-denied",
+      "threatImpact": "Enforcement partially fails; principal keeps spending on the un-covered resources (cost).",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A009"
+      ],
+      "statement": "A A metered principal whose deny target expands to a very large resource list (many inference profiles / wildcard) Enough associated profile ARNs that the policy document approaches the IAM managed-policy 6KB size limit can Cause the deny policy resource list to be truncated / the CreatePolicy call to fail, leaving the principal partially or un-denied, which leads to Enforcement partially fails; principal keeps spending on the un-covered resources (cost).",
+      "displayOrder": 5,
+      "status": "threatResolved",
+      "tags": [
+        "POL-2",
+        "boundary:B2",
+        "policy-size",
+        "code-mitigated"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "531012ac-8714-4c39-997b-b053c4f4ee98",
+      "numericId": 6,
+      "threatSource": "An authenticated per-account (scope-limited) admin",
+      "prerequisites": "A write route that does not call scopeAllows before writing, or a principal ARN whose account cannot be parsed",
+      "threatAction": "Invoke an admin write (budget create/update/delete/release/toggle) targeting a principal in an account outside the caller's scope",
+      "threatImpact": "Cross-account privilege escalation: manipulate budgets/enforcement for accounts the admin does not administer.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A008",
+        "A009"
+      ],
+      "statement": "A An authenticated per-account (scope-limited) admin A write route that does not call scopeAllows before writing, or a principal ARN whose account cannot be parsed can Invoke an admin write (budget create/update/delete/release/toggle) targeting a principal in an account outside the caller's scope, which leads to Cross-account privilege escalation: manipulate budgets/enforcement for accounts the admin does not administer.",
+      "displayOrder": 6,
+      "status": "threatResolved",
+      "tags": [
+        "AUZ-1",
+        "boundary:B4",
+        "scope",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "1bff76a3-11f3-4079-bd19-f3e4dca4028c",
+      "numericId": 7,
+      "threatSource": "A member of the legacy Cognito Admins group",
+      "prerequisites": "Legacy Admins group still exists and maps to wildcard scope (migration to BBG-Admin-* incomplete)",
+      "threatAction": "Sign in and receive bbg:scope=[\"*\"] via the Admins->wildcard fallback, gaining org-wide super-admin",
+      "threatImpact": "Any member of a broad legacy group gets org-wide admin (elevation) - broader access than intended per-account model.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A011"
+      ],
+      "statement": "A A member of the legacy Cognito Admins group Legacy Admins group still exists and maps to wildcard scope (migration to BBG-Admin-* incomplete) can Sign in and receive bbg:scope=[\"*\"] via the Admins->wildcard fallback, gaining org-wide super-admin, which leads to Any member of a broad legacy group gets org-wide admin (elevation) - broader access than intended per-account model.",
+      "displayOrder": 7,
+      "status": "threatResolved",
+      "tags": [
+        "AUZ-2",
+        "boundary:B3",
+        "legacy-fallback",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "37870d05-c2f9-44fe-8d72-9774132e1332",
+      "numericId": 8,
+      "threatSource": "An authenticated admin attempting to widen their own authorization",
+      "prerequisites": "bbg:scope derivable from a claim the client can influence (client-supplied rather than server-derived)",
+      "threatAction": "Forge/alter the bbg:scope claim (or a group) in the token to gain wildcard or other-account scope",
+      "threatImpact": "Spoofed authorization -> cross-account admin. (Mitigated: scope is server-derived by pre-token-gen and JWT-signed.)",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A011"
+      ],
+      "statement": "A An authenticated admin attempting to widen their own authorization bbg:scope derivable from a claim the client can influence (client-supplied rather than server-derived) can Forge/alter the bbg:scope claim (or a group) in the token to gain wildcard or other-account scope, which leads to Spoofed authorization -> cross-account admin. (Mitigated: scope is server-derived by pre-token-gen and JWT-signed.)",
+      "displayOrder": 8,
+      "status": "threatResolved",
+      "tags": [
+        "AUZ-3",
+        "boundary:B3",
+        "claim-integrity",
+        "code-mitigated"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "bdded57f-c003-4973-b971-4a58c39efb1c",
+      "numericId": 9,
+      "threatSource": "An admin (in scope) supplying a crafted principal/target in a budget or enrollment write",
+      "prerequisites": "Write path that does not validate the principal/target ARN before it becomes a deny-policy resource",
+      "threatAction": "Submit a malformed/over-broad target so the generated deny policy resource defaults to '*' or an unintended ARN",
+      "threatImpact": "Malformed or over-broad Deny (attach to wrong/too-many resources) - tampering with enforcement scope.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A008"
+      ],
+      "statement": "A An admin (in scope) supplying a crafted principal/target in a budget or enrollment write Write path that does not validate the principal/target ARN before it becomes a deny-policy resource can Submit a malformed/over-broad target so the generated deny policy resource defaults to '*' or an unintended ARN, which leads to Malformed or over-broad Deny (attach to wrong/too-many resources) - tampering with enforcement scope.",
+      "displayOrder": 9,
+      "status": "threatResolved",
+      "tags": [
+        "API-1",
+        "boundary:B4",
+        "input-validation",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "818f6bdd-472e-4501-801d-4942fcffeeeb",
+      "numericId": 10,
+      "threatSource": "An admin performing a privileged write that is not covered by the audit emitter",
+      "prerequisites": "An admin write path that mutates state without calling emitAudit",
+      "threatAction": "Change budgets/users/pricing/enrollment/enforcement without leaving an audit line",
+      "threatImpact": "Repudiation: privileged action with no accountability record; weakens incident forensics.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A012"
+      ],
+      "statement": "A An admin performing a privileged write that is not covered by the audit emitter An admin write path that mutates state without calling emitAudit can Change budgets/users/pricing/enrollment/enforcement without leaving an audit line, which leads to Repudiation: privileged action with no accountability record; weakens incident forensics.",
+      "displayOrder": 10,
+      "status": "threatResolved",
+      "tags": [
+        "API-2",
+        "boundary:B4",
+        "audit-coverage",
+        "code-mitigated"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "49c2b654-72bc-459d-84b4-dae3be97d592",
+      "numericId": 11,
+      "threatSource": "A metered principal, or an ingestion-path failure (dropped event, cross-region loss, identity-cache miss)",
+      "prerequisites": "A gap in invocation-log delivery, cross-region EventBridge forwarding, or the requestId->principal join",
+      "threatAction": "Cause spend to be under-counted or never joined to a principal so RUNNING_SPEND never crosses the block threshold",
+      "threatImpact": "Enforcement never triggers; a runaway/over-budget principal keeps spending (cost overrun).",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A009"
+      ],
+      "statement": "A A metered principal, or an ingestion-path failure (dropped event, cross-region loss, identity-cache miss) A gap in invocation-log delivery, cross-region EventBridge forwarding, or the requestId->principal join can Cause spend to be under-counted or never joined to a principal so RUNNING_SPEND never crosses the block threshold, which leads to Enforcement never triggers; a runaway/over-budget principal keeps spending (cost overrun).",
+      "displayOrder": 11,
+      "status": "threatResolved",
+      "tags": [
+        "MET-1",
+        "boundary:B5",
+        "under-count",
+        "remediated:the pre-release remediation"
+      ],
+      "metadata": []
+    },
+    {
+      "id": "e6eae4a8-c205-49a0-b3eb-ca1210804d29",
+      "numericId": 12,
+      "threatSource": "An unauthenticated internet actor reading the public SPA",
+      "prerequisites": "Access to the CloudFront-served public config.json / static assets",
+      "threatAction": "Read config.json for secrets, or probe for WAF rule gaps against the edge",
+      "threatImpact": "Info disclosure IF config.json held secrets (it holds only non-secret client config: pool/client id, URLs). Bounded per A002.",
+      "impactedGoal": [],
+      "impactedAssets": [
+        "A011"
+      ],
+      "statement": "A An unauthenticated internet actor reading the public SPA Access to the CloudFront-served public config.json / static assets can Read config.json for secrets, or probe for WAF rule gaps against the edge, which leads to Info disclosure IF config.json held secrets (it holds only non-secret client config: pool/client id, URLs). Bounded per A002.",
+      "displayOrder": 12,
+      "status": "threatResolved",
+      "tags": [
+        "EDGE-1",
+        "boundary:B5",
+        "public-config",
+        "code-mitigated"
+      ],
+      "metadata": []
+    }
+  ]
+}

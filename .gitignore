@@ -1,0 +1,63 @@
+# Node
+node_modules/
+*.log
+npm-debug.log*
+.npm/
+.pnp
+.pnp.js
+
+# CDK
+cdk.out/
+cdk.context.json
+*.tsbuildinfo
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Web bundles
+web/dist/
+web/.vite/
+
+# Generated runtime config (contains real account IDs / deploy URLs).
+# Re-created by `npm run -w @bbg/web dump-config` from CFN outputs.
+web/public/config.json
+
+# Environment / secrets
+.env
+.env.*
+!.env.local.example
+.demo-credentials.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs and local fixtures
+*.local
+tmp/
+.tmp/
+
+# Agent config + worktrees (local-only; never part of the sample).
+# Only ~/.config/git/ignore was keeping these out — that's personal to one
+# machine, so CI or a second clone would happily commit them.
+.claude/
+
+# Saved AI-assistant session files
+bbg-rpm-tpm-feature-build-*.json
+
+# Python (vendored readiness Lambda under lambda/python/)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local demo spec (mock, not part of the sample)
+.kiro/

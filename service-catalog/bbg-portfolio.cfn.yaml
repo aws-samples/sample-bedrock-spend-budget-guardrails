@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Bedrock Budget Guard — AWS Service Catalog portfolio + product.
+
+  Customers (or their central cloud team) launch THIS template once
+  per AWS account that should host BBG. It registers a Service
+  Catalog portfolio + product whose product template is the BBG
+  operator-config bootstrap (bbg-bootstrap.cfn.yaml). End users
+  with the listed IAM principals can then self-service-launch the
+  product to bootstrap a BBG install.
+
+  Two-step pattern (vs. baking the bootstrap inline): keeps the SC
+  product version pin separate from the portfolio's lifecycle, so
+  upgrading the bootstrap CFN is a `update-provisioning-artifact`
+  rather than a portfolio rebuild.
+
+Parameters:
+  PortfolioOwner:
+    Type: String
+    Default: BBG operators
+    Description: Display name shown in Service Catalog console.
+
+  ProductTemplateUrl:
+    Type: String
+    Description: |
+      S3 URL (or HTTPS URL with bucket-owner-policy access) of the
+      bbg-bootstrap.cfn.yaml file. For the GitOps install path,
+      operators upload that file to a private S3 bucket in the same
+      account and pass the URL here. The Phase B aws-samples publish
+      will replace this with a public URL.
+
+  GranteePrincipalArn:
+    Type: String
+    Default: ''
+    Description: |
+      Optional IAM principal ARN that can launch the product. Common
+      shapes: `arn:aws:iam::<account>:role/PowerUsers` or a SSO
+      permission-set role ARN. Leave blank to skip principal grants
+      (administrators can grant via the Service Catalog console
+      after launch).
+    AllowedPattern: '^(arn:aws:iam::\d{12}:.+)?$'
+
+Conditions:
+  HasGrantee: !Not [!Equals [!Ref GranteePrincipalArn, '']]
+
+Resources:
+  Portfolio:
+    Type: AWS::ServiceCatalog::Portfolio
+    Properties:
+      DisplayName: BBG
+      ProviderName: !Ref PortfolioOwner
+      Description: |
+        Bedrock Budget Guard — near real-time per-IAM-principal × per-model
+        spend metering and budget enforcement for Amazon Bedrock.
+
+  Product:
+    Type: AWS::ServiceCatalog::CloudFormationProduct
+    Properties:
+      Name: BBG operator-config bootstrap
+      Owner: !Ref PortfolioOwner
+      Description: |
+        Bootstraps the /bbg/operator-config SSM parameter so the
+        subsequent `cdk deploy PipelineStack` step finds everything
+        it needs without manual ssm put-parameter. After launch,
+        run the commands in the stack's Outputs from CloudShell.
+      ProvisioningArtifactParameters:
+        - Name: v1
+          Description: Initial release.
+          Info:
+            LoadTemplateFromURL: !Ref ProductTemplateUrl
+
+  Association:
+    Type: AWS::ServiceCatalog::PortfolioProductAssociation
+    Properties:
+      PortfolioId: !Ref Portfolio
+      ProductId: !Ref Product
+
+  PrincipalAssociation:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: HasGrantee
+    Properties:
+      PortfolioId: !Ref Portfolio
+      PrincipalARN: !Ref GranteePrincipalArn
+      PrincipalType: IAM
+
+Outputs:
+  PortfolioId:
+    Description: Service Catalog portfolio ID. Use this to add launch principals later via the console or CLI.
+    Value: !Ref Portfolio
+
+  ProductId:
+    Description: Service Catalog product ID for the BBG bootstrap.
+    Value: !Ref Product

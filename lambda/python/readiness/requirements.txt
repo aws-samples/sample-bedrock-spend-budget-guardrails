@@ -1,0 +1,22 @@
+# Bundled into the readiness Lambda asset by the Docker pip step in
+# BbgPythonFunction (infra/lib/constructs/python-fn.ts).
+#
+# boto3/botocore ship in the Lambda Python runtime, but the attribution
+# audit relies on recent Bedrock list APIs (inference profiles, projects /
+# mantle, agents, knowledge bases, guardrails) and bcm-data-exports. Pin a
+# current boto3 so the bundle is self-contained and independent of whatever
+# boto3 version the runtime happens to carry. All transitive deps
+# (botocore, jmespath, python-dateutil, s3transfer, urllib3) are pure-Python
+# wheels, so the bundle is architecture-independent.
+#
+# boto3 is runtime-provided in the Lambda Python runtime; we keep it here for
+# local development and to guarantee the bundled APIs are present, but bound
+# it to the current major so an untested boto3 2.x never sneaks in at build
+# time. Not hard-pinned on purpose — an exact pin would fight the
+# runtime-provided copy.
+boto3>=1.34.0,<2.0.0
+
+# defusedcsv hardens the CSV report writers (core/report_csv.py) against
+# spreadsheet formula injection. Pure-Python, zero runtime deps, so it keeps
+# the bundle architecture-independent.
+defusedcsv==2.0.0

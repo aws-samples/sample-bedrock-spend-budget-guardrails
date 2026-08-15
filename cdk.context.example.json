@@ -1,0 +1,5 @@
+{
+  "bbg:githubOwner": "your-github-user-or-org",
+  "bbg:meteredRegions": ["us-west-2"],
+  "bbg:alertEmail": "ops@example.com"
+}

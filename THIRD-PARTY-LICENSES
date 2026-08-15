@@ -1,0 +1,1513 @@
+# Third-Party Licenses
+
+Budget Guard for Amazon Bedrock (this sample) is licensed under MIT-0 (see LICENSE).
+It depends on the third-party open-source packages listed below. Each is the property
+of its respective copyright holders and is used under the license noted.
+
+This attribution covers the resolved dependency tree in node_modules (npm workspaces:
+infra, lambda, web). It is generated from each package’s own package.json; regenerate
+with scripts/gen-third-party-licenses.mjs after dependency changes.
+
+## License summary
+
+- MIT: 220
+- Apache-2.0: 111
+- BSD-3-Clause: 16
+- ISC: 10
+- MIT-0: 5
+- BSD-2-Clause: 5
+- MPL-2.0: 2
+- (MIT OR GPL-3.0-or-later): 1
+- BlueOak-1.0.0: 1
+- 0BSD: 1
+
+Total third-party packages: 372
+
+## Packages
+
+### @adobe/css-tools 4.5.0
+- License: MIT
+- Source: https://github.com/adobe/css-tools
+
+### @asamuzakjp/css-color 3.2.0
+- License: MIT
+- Source: https://github.com/asamuzaK/cssColor
+
+### @aws-amplify/analytics 7.1.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/api 6.3.29
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/api-graphql 4.8.10
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/api-rest 4.6.4
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/auth 6.20.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/core 6.18.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/data-schema 1.26.1
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-data
+
+### @aws-amplify/data-schema-types 1.3.0
+- License: Apache-2.0
+
+### @aws-amplify/datastore 5.1.10
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/notifications 2.1.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-amplify/storage 6.16.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### @aws-cdk/asset-awscli-v1 2.2.282
+- License: Apache-2.0
+- Source: https://github.com/cdklabs/awscdk-asset-awscli
+
+### @aws-cdk/asset-node-proxy-agent-v6 2.1.2
+- License: Apache-2.0
+- Source: https://github.com/cdklabs/awscdk-asset-node-proxy-agent
+
+### @aws-cdk/cloud-assembly-api 2.2.6
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-cdk-cli
+
+### @aws-cdk/cloud-assembly-schema 54.15.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-cdk-cli
+
+### @aws-crypto/sha256-js 5.2.0
+- License: Apache-2.0
+- Source: git@github.com:aws/aws-sdk-js-crypto-helpers
+
+### @aws-crypto/util 5.2.0
+- License: Apache-2.0
+- Source: git@github.com:aws/aws-sdk-js-crypto-helpers
+
+### @aws-lambda-powertools/commons 2.34.0
+- License: MIT-0
+- Source: https://github.com/aws-powertools/powertools-lambda-typescript
+
+### @aws-lambda-powertools/logger 2.34.0
+- License: MIT-0
+- Source: https://github.com/aws-powertools/powertools-lambda-typescript
+
+### @aws-lambda-powertools/metrics 2.34.0
+- License: MIT-0
+- Source: https://github.com/aws-powertools/powertools-lambda-typescript
+
+### @aws-lambda-powertools/tracer 2.34.0
+- License: MIT-0
+- Source: https://github.com/aws-powertools/powertools-lambda-typescript
+
+### @aws-sdk/checksums 3.1000.24
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-athena 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-bedrock 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-bedrock-agent-runtime 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-bedrock-runtime 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-budgets 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-cloudformation 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-cloudwatch 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-cloudwatch-logs 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-codepipeline 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-cognito-identity-provider 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-dynamodb 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-eventbridge 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-firehose 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-iam 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-kinesis 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-lambda 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-organizations 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-personalize-events 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-pricing 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-s3 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-ses 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-sfn 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-ssm 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-sso-admin 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/client-sts 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/core 3.977.4
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-env 3.972.65
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-http 3.972.67
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-ini 3.973.10
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-login 3.972.72
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-node 3.972.76
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-process 3.972.65
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-sso 3.973.9
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/credential-provider-web-identity 3.972.71
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/dynamodb-codec 3.973.39
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/endpoint-cache 3.972.9
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/eventstream-handler-node 3.972.31
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/lib-dynamodb 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/middleware-endpoint-discovery 3.972.27
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/middleware-eventstream 3.972.26
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/middleware-sdk-s3 3.972.70
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/middleware-websocket 3.972.47
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/nested-clients 3.997.39
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/signature-v4-multi-region 3.996.43
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/token-providers 3.1100.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/token-providers 3.1101.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/types 3.974.2
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/util-dynamodb 3.996.7
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws-sdk/xml-builder 3.972.37
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-sdk-js-v3
+
+### @aws/cloudformation-validate 1.6.0-beta
+- License: Apache-2.0
+- Source: https://github.com/aws-cloudformation/cloudformation-validate
+
+### @aws/lambda-invoke-store 0.3.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/aws-lambda-invoke-store
+
+### @babel/code-frame 7.29.7
+- License: MIT
+- Source: https://github.com/babel/babel
+
+### @babel/helper-validator-identifier 7.29.7
+- License: MIT
+- Source: https://github.com/babel/babel
+
+### @babel/runtime 7.29.7
+- License: MIT
+- Source: https://github.com/babel/babel
+
+### @balena/dockerignore 1.0.2
+- License: Apache-2.0
+- Source: git@github.com:balena-io-modules/dockerignore
+
+### @cloudscape-design/collection-hooks 1.0.105
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/collection-hooks
+
+### @cloudscape-design/component-toolkit 1.0.0-beta.173
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/component-toolkit
+
+### @cloudscape-design/components 3.0.1340
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/components
+
+### @cloudscape-design/global-styles 1.0.65
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/global-styles
+
+### @cloudscape-design/test-utils-core 1.0.87
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/test-utils
+
+### @cloudscape-design/theming-runtime 1.0.124
+- License: Apache-2.0
+- Source: https://github.com/cloudscape-design/theming-core
+
+### @codemirror/autocomplete 6.20.3
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/autocomplete
+
+### @codemirror/commands 6.10.4
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/commands
+
+### @codemirror/lang-yaml 6.1.3
+- License: MIT
+- Source: https://github.com/codemirror/lang-yaml
+
+### @codemirror/language 6.12.4
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/language
+
+### @codemirror/lint 6.9.7
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/lint
+
+### @codemirror/search 6.7.1
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/search
+
+### @codemirror/state 6.7.1
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/state
+
+### @codemirror/theme-one-dark 6.1.3
+- License: MIT
+- Source: https://github.com/codemirror/theme-one-dark
+
+### @codemirror/view 6.43.7
+- License: MIT
+- Source: https://code.haverbeke.berlin/codemirror/view
+
+### @csstools/color-helpers 5.1.0
+- License: MIT-0
+- Source: https://github.com/csstools/postcss-plugins
+
+### @csstools/css-calc 2.1.4
+- License: MIT
+- Source: https://github.com/csstools/postcss-plugins
+
+### @csstools/css-color-parser 3.1.0
+- License: MIT
+- Source: https://github.com/csstools/postcss-plugins
+
+### @csstools/css-parser-algorithms 3.0.5
+- License: MIT
+- Source: https://github.com/csstools/postcss-plugins
+
+### @csstools/css-tokenizer 3.0.4
+- License: MIT
+- Source: https://github.com/csstools/postcss-plugins
+
+### @dnd-kit/accessibility 3.1.1
+- License: MIT
+- Source: https://github.com/clauderic/dnd-kit
+
+### @dnd-kit/core 6.3.1
+- License: MIT
+- Source: https://github.com/clauderic/dnd-kit
+
+### @dnd-kit/sortable 7.0.2
+- License: MIT
+- Source: https://github.com/clauderic/dnd-kit
+
+### @dnd-kit/utilities 3.2.2
+- License: MIT
+- Source: https://github.com/clauderic/dnd-kit
+
+### @esbuild/darwin-arm64 0.28.1
+- License: MIT
+- Source: https://github.com/evanw/esbuild
+
+### @formatjs/ecma402-abstract 2.3.6
+- License: MIT
+- Source: git@github.com:formatjs/formatjs
+
+### @formatjs/fast-memoize 2.2.7
+- License: MIT
+- Source: formatjs/formatjs
+
+### @formatjs/icu-messageformat-parser 2.11.4
+- License: MIT
+- Source: https://github.com/formatjs/formatjs
+
+### @formatjs/icu-skeleton-parser 1.8.16
+- License: MIT
+- Source: https://github.com/formatjs/formatjs
+
+### @formatjs/intl-localematcher 0.6.2
+- License: MIT
+- Source: formatjs/formatjs
+
+### @jridgewell/sourcemap-codec 1.5.5
+- License: MIT
+- Source: https://github.com/jridgewell/sourcemaps
+
+### @lezer/common 1.5.2
+- License: MIT
+- Source: https://github.com/lezer-parser/common
+
+### @lezer/highlight 1.2.3
+- License: MIT
+- Source: https://github.com/lezer-parser/highlight
+
+### @lezer/lr 1.4.10
+- License: MIT
+- Source: https://code.haverbeke.berlin/lezer/lr
+
+### @lezer/yaml 1.0.4
+- License: MIT
+- Source: https://github.com/lezer-parser/yaml
+
+### @marijn/find-cluster-break 1.0.3
+- License: MIT
+- Source: https://code.haverbeke.berlin/marijn/find-cluster-break
+
+### @material/material-color-utilities 0.3.0
+- License: Apache-2.0
+- Source: https://github.com/material-foundation/material-color-utilities
+
+### @napi-rs/wasm-runtime 1.2.2
+- License: MIT
+- Source: https://github.com/napi-rs/napi-rs
+
+### @nodable/entities 3.0.0
+- License: MIT
+- Source: https://github.com/nodable/val-parsers
+
+### @oxc-project/types 0.142.0
+- License: MIT
+- Source: https://github.com/oxc-project/oxc
+
+### @rolldown/binding-darwin-arm64 1.2.1
+- License: MIT
+- Source: https://github.com/rolldown/rolldown
+
+### @rolldown/binding-wasm32-wasi 1.2.1
+- License: MIT
+- Source: https://github.com/rolldown/rolldown
+
+### @rolldown/pluginutils 1.0.1
+- License: MIT
+- Source: https://github.com/rolldown/plugins
+
+### @sinonjs/commons 3.0.1
+- License: BSD-3-Clause
+- Source: https://github.com/sinonjs/commons
+
+### @sinonjs/fake-timers 11.2.2
+- License: BSD-3-Clause
+- Source: https://github.com/sinonjs/fake-timers
+
+### @sinonjs/fake-timers 15.4.0
+- License: BSD-3-Clause
+- Source: https://github.com/sinonjs/fake-timers
+
+### @sinonjs/samsam 8.0.3
+- License: BSD-3-Clause
+- Source: https://github.com/sinonjs/samsam
+
+### @smithy/core 3.31.1
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/credential-provider-imds 4.4.16
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/fetch-http-handler 5.6.13
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/is-array-buffer 2.2.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/is-array-buffer 3.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/md5-js 2.0.7
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/middleware-compression 4.5.16
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/node-http-handler 4.9.13
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/service-error-classification 2.1.5
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/signature-v4 5.6.12
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/types 2.12.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/types 3.7.2
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/types 4.16.1
+- License: Apache-2.0
+- Source: https://github.com/smithy-lang/smithy-typescript
+
+### @smithy/util-base64 3.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/util-buffer-from 2.2.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/util-buffer-from 3.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/util-hex-encoding 2.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/util-utf8 2.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @smithy/util-utf8 3.0.0
+- License: Apache-2.0
+- Source: https://github.com/awslabs/smithy-typescript
+
+### @standard-schema/spec 1.1.0
+- License: MIT
+- Source: https://github.com/standard-schema/standard-schema
+
+### @testing-library/dom 10.4.1
+- License: MIT
+- Source: https://github.com/testing-library/dom-testing-library
+
+### @testing-library/jest-dom 6.9.1
+- License: MIT
+- Source: https://github.com/testing-library/jest-dom
+
+### @testing-library/react 16.3.2
+- License: MIT
+- Source: https://github.com/testing-library/react-testing-library
+
+### @tybys/wasm-util 0.10.3
+- License: MIT
+- Source: https://github.com/toyobayashi/wasm-util
+
+### @types/aria-query 5.0.4
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/aws-lambda 8.10.162
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/chai 5.2.3
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/cls-hooked 4.3.9
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/deep-eql 4.0.2
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/estree 1.0.9
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/json-schema 7.0.15
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/node 24.13.3
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/react 19.2.18
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/react-dom 19.2.4
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/sinon 17.0.4
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/sinonjs__fake-timers 15.0.1
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @types/uuid 9.0.8
+- License: MIT
+- Source: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+### @uiw/codemirror-extensions-basic-setup 4.25.11
+- License: MIT
+- Source: https://github.com/uiwjs/react-codemirror
+
+### @uiw/react-codemirror 4.25.11
+- License: MIT
+- Source: https://github.com/uiwjs/react-codemirror
+
+### @vitejs/plugin-react 6.0.5
+- License: MIT
+- Source: https://github.com/vitejs/vite-plugin-react
+
+### @vitest/expect 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/mocker 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/pretty-format 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/runner 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/snapshot 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/spy 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### @vitest/utils 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### ace-builds 1.44.0
+- License: BSD-3-Clause
+- Source: https://github.com/ajaxorg/ace-builds
+
+### agent-base 7.1.4
+- License: MIT
+- Source: https://github.com/TooTallNate/proxy-agents
+
+### ansi-regex 5.0.1
+- License: MIT
+- Source: chalk/ansi-regex
+
+### ansi-styles 5.2.0
+- License: MIT
+- Source: chalk/ansi-styles
+
+### anynum 1.0.1
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/anynum
+
+### aria-query 5.3.0
+- License: Apache-2.0
+- Source: https://github.com/A11yance/aria-query
+
+### assertion-error 2.0.1
+- License: MIT
+- Source: git@github.com:chaijs/assertion-error
+
+### async-hook-jl 1.7.6
+- License: MIT
+- Source: https://github.com/jeff-lewis/async-hook-jl
+
+### asynckit 0.4.0
+- License: MIT
+- Source: https://github.com/alexindigo/asynckit
+
+### atomic-batcher 1.0.2
+- License: MIT
+- Source: https://github.com/mafintosh/atomic-batcher
+
+### aws-amplify 6.20.0
+- License: Apache-2.0
+- Source: https://github.com/aws-amplify/amplify-js
+
+### aws-cdk 2.1134.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-cdk-cli
+
+### aws-cdk-lib 2.263.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-cdk
+
+### aws-sdk-client-mock 4.1.0
+- License: MIT
+- Source: https://github.com/m-radzikowski/aws-sdk-client-mock
+
+### aws-xray-sdk-core 3.12.0
+- License: Apache-2.0
+- Source: https://github.com/aws/aws-xray-sdk-node/tree/master/packages/core
+
+### balanced-match 4.0.4
+- License: MIT
+- Source: https://github.com/juliangruber/balanced-match
+
+### base64-js 1.5.1
+- License: MIT
+- Source: https://github.com/beatgammit/base64-js
+
+### bowser 2.14.1
+- License: MIT
+- Source: https://github.com/bowser-js/bowser
+
+### brace-expansion 5.0.8
+- License: MIT
+- Source: https://github.com/juliangruber/brace-expansion
+
+### buffer 4.9.2
+- License: MIT
+- Source: https://github.com/feross/buffer
+
+### buffer-from 1.1.2
+- License: MIT
+- Source: LinusU/buffer-from
+
+### call-bind-apply-helpers 1.0.2
+- License: MIT
+- Source: https://github.com/ljharb/call-bind-apply-helpers
+
+### case 1.6.3
+- License: (MIT OR GPL-3.0-or-later)
+- Source: http://github.com/nbubna/Case
+
+### cdk-nag 2.38.2
+- License: Apache-2.0
+- Source: https://github.com/cdklabs/cdk-nag
+
+### chai 6.2.2
+- License: MIT
+- Source: https://github.com/chaijs/chai
+
+### cls-hooked 4.2.2
+- License: BSD-2-Clause
+- Source: https://github.com/jeff-lewis/cls-hooked
+
+### clsx 1.2.1
+- License: MIT
+- Source: lukeed/clsx
+
+### codemirror 6.0.2
+- License: MIT
+- Source: https://github.com/codemirror/basic-setup
+
+### combined-stream 1.0.8
+- License: MIT
+- Source: https://github.com/felixge/node-combined-stream
+
+### constructs 10.8.0
+- License: Apache-2.0
+- Source: https://github.com/aws/constructs
+
+### convert-source-map 2.0.0
+- License: MIT
+- Source: https://github.com/thlorenz/convert-source-map
+
+### cookie-es 3.1.1
+- License: MIT
+- Source: unjs/cookie-es
+
+### crc-32 1.2.2
+- License: Apache-2.0
+- Source: https://github.com/SheetJS/js-crc32
+
+### crelt 1.0.7
+- License: MIT
+- Source: https://code.haverbeke.berlin/marijn/crelt
+
+### css-selector-tokenizer 0.8.0
+- License: MIT
+- Source: https://github.com/css-modules/css-selector-tokenizer
+
+### css.escape 1.5.1
+- License: MIT
+- Source: https://github.com/mathiasbynens/CSS.escape
+
+### cssesc 3.0.0
+- License: MIT
+- Source: https://github.com/mathiasbynens/cssesc
+
+### cssstyle 4.6.0
+- License: MIT
+- Source: jsdom/cssstyle
+
+### csstype 3.2.3
+- License: MIT
+- Source: https://github.com/frenic/csstype
+
+### d3-path 1.0.9
+- License: BSD-3-Clause
+- Source: https://github.com/d3/d3-path
+
+### d3-shape 1.3.7
+- License: BSD-3-Clause
+- Source: https://github.com/d3/d3-shape
+
+### data-urls 5.0.0
+- License: MIT
+- Source: jsdom/data-urls
+
+### date-fns 2.30.0
+- License: MIT
+- Source: https://github.com/date-fns/date-fns
+
+### debug 4.4.3
+- License: MIT
+- Source: https://github.com/debug-js/debug
+
+### decimal.js 10.6.0
+- License: MIT
+- Source: https://github.com/MikeMcl/decimal.js
+
+### delayed-stream 1.0.0
+- License: MIT
+- Source: https://github.com/felixge/node-delayed-stream
+
+### dequal 2.0.3
+- License: MIT
+- Source: lukeed/dequal
+
+### detect-libc 2.1.2
+- License: Apache-2.0
+- Source: https://github.com/lovell/detect-libc
+
+### diff 5.2.2
+- License: BSD-3-Clause
+- Source: https://github.com/kpdecker/jsdiff
+
+### dom-accessibility-api 0.5.16
+- License: MIT
+- Source: https://github.com/eps1lon/dom-accessibility-api
+
+### dom-accessibility-api 0.6.3
+- License: MIT
+- Source: https://github.com/eps1lon/dom-accessibility-api
+
+### dom-helpers 5.2.1
+- License: MIT
+- Source: https://github.com/react-bootstrap/dom-helpers
+
+### dunder-proto 1.0.1
+- License: MIT
+- Source: https://github.com/es-shims/dunder-proto
+
+### emitter-listener 1.1.2
+- License: BSD-2-Clause
+- Source: https://github.com/othiym23/emitter-listener
+
+### entities 6.0.1
+- License: BSD-2-Clause
+- Source: https://github.com/fb55/entities
+
+### es-define-property 1.0.1
+- License: MIT
+- Source: https://github.com/ljharb/es-define-property
+
+### es-errors 1.3.0
+- License: MIT
+- Source: https://github.com/ljharb/es-errors
+
+### es-module-lexer 2.3.1
+- License: MIT
+- Source: https://github.com/guybedford/es-module-lexer
+
+### es-object-atoms 1.1.2
+- License: MIT
+- Source: https://github.com/ljharb/es-object-atoms
+
+### es-set-tostringtag 2.1.0
+- License: MIT
+- Source: https://github.com/es-shims/es-set-tostringtag
+
+### esbuild 0.28.1
+- License: MIT
+- Source: https://github.com/evanw/esbuild
+
+### estree-walker 3.0.3
+- License: MIT
+- Source: https://github.com/Rich-Harris/estree-walker
+
+### expect-type 1.4.0
+- License: Apache-2.0
+- Source: https://github.com/mmkal/expect-type
+
+### fast-xml-builder 1.3.0
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/fast-xml-builder
+
+### fast-xml-parser 5.10.1
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/fast-xml-parser
+
+### fastparse 1.1.2
+- License: MIT
+- Source: https://github.com/webpack/fastparse
+
+### fdir 6.5.0
+- License: MIT
+- Source: https://github.com/thecodrr/fdir
+
+### fflate 0.8.1
+- License: MIT
+- Source: https://github.com/101arrowz/fflate
+
+### form-data 4.0.6
+- License: MIT
+- Source: https://github.com/form-data/form-data
+
+### fs-extra 11.3.6
+- License: MIT
+- Source: https://github.com/jprichardson/node-fs-extra
+
+### fsevents 2.3.2
+- License: MIT
+- Source: https://github.com/fsevents/fsevents
+
+### fsevents 2.3.3
+- License: MIT
+- Source: https://github.com/fsevents/fsevents
+
+### function-bind 1.1.2
+- License: MIT
+- Source: https://github.com/Raynos/function-bind
+
+### get-intrinsic 1.3.0
+- License: MIT
+- Source: https://github.com/ljharb/get-intrinsic
+
+### get-proto 1.0.1
+- License: MIT
+- Source: https://github.com/ljharb/get-proto
+
+### gopd 1.2.0
+- License: MIT
+- Source: https://github.com/ljharb/gopd
+
+### graceful-fs 4.2.11
+- License: ISC
+- Source: https://github.com/isaacs/node-graceful-fs
+
+### graphql 15.8.0
+- License: MIT
+- Source: https://github.com/graphql/graphql-js
+
+### has-flag 4.0.0
+- License: MIT
+- Source: sindresorhus/has-flag
+
+### has-symbols 1.1.0
+- License: MIT
+- Source: https://github.com/inspect-js/has-symbols
+
+### has-tostringtag 1.0.2
+- License: MIT
+- Source: https://github.com/inspect-js/has-tostringtag
+
+### hasown 2.0.4
+- License: MIT
+- Source: https://github.com/inspect-js/hasOwn
+
+### html-encoding-sniffer 4.0.0
+- License: MIT
+- Source: jsdom/html-encoding-sniffer
+
+### http-proxy-agent 7.0.2
+- License: MIT
+- Source: https://github.com/TooTallNate/proxy-agents
+
+### https-proxy-agent 7.0.6
+- License: MIT
+- Source: https://github.com/TooTallNate/proxy-agents
+
+### iconv-lite 0.6.3
+- License: MIT
+- Source: https://github.com/ashtuchkin/iconv-lite
+
+### idb 5.0.6
+- License: ISC
+- Source: https://github.com/jakearchibald/idb
+
+### ieee754 1.2.1
+- License: BSD-3-Clause
+- Source: https://github.com/feross/ieee754
+
+### ignore 5.3.2
+- License: MIT
+- Source: git@github.com:kaelzhang/node-ignore
+
+### immer 11.1.15
+- License: MIT
+- Source: https://github.com/immerjs/immer
+
+### indent-string 4.0.0
+- License: MIT
+- Source: sindresorhus/indent-string
+
+### intl-messageformat 10.7.18
+- License: BSD-3-Clause
+- Source: git@github.com:formatjs/formatjs
+
+### is-potential-custom-element-name 1.0.1
+- License: MIT
+- Source: https://github.com/mathiasbynens/is-potential-custom-element-name
+
+### is-unsafe 2.0.0
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/is-unsafe
+
+### isarray 1.0.0
+- License: MIT
+- Source: https://github.com/juliangruber/isarray
+
+### js-cookie 3.0.8
+- License: MIT
+- Source: https://github.com/js-cookie/js-cookie
+
+### js-tokens 4.0.0
+- License: MIT
+- Source: lydell/js-tokens
+
+### jsdom 25.0.1
+- License: MIT
+- Source: https://github.com/jsdom/jsdom
+
+### jsonfile 6.2.1
+- License: MIT
+- Source: git@github.com:jprichardson/node-jsonfile
+
+### jsonschema 1.5.0
+- License: MIT
+- Source: https://github.com/tdegrunt/jsonschema
+
+### just-extend 6.2.0
+- License: MIT
+- Source: https://github.com/angus-c/just
+
+### lightningcss 1.33.0
+- License: MPL-2.0
+- Source: https://github.com/parcel-bundler/lightningcss
+
+### lightningcss-darwin-arm64 1.33.0
+- License: MPL-2.0
+- Source: https://github.com/parcel-bundler/lightningcss
+
+### lodash 4.18.1
+- License: MIT
+- Source: lodash/lodash
+
+### loose-envify 1.4.0
+- License: MIT
+- Source: https://github.com/zertosh/loose-envify
+
+### lru-cache 10.4.3
+- License: ISC
+- Source: https://github.com/isaacs/node-lru-cache
+
+### lz-string 1.5.0
+- License: MIT
+- Source: https://github.com/pieroxy/lz-string
+
+### magic-string 0.30.21
+- License: MIT
+- Source: https://github.com/Rich-Harris/magic-string
+
+### math-intrinsics 1.1.0
+- License: MIT
+- Source: https://github.com/es-shims/math-intrinsics
+
+### mime-db 1.52.0
+- License: MIT
+- Source: jshttp/mime-db
+
+### mime-types 2.1.35
+- License: MIT
+- Source: jshttp/mime-types
+
+### min-indent 1.0.1
+- License: MIT
+- Source: https://github.com/thejameskyle/min-indent
+
+### minimatch 10.2.5
+- License: BlueOak-1.0.0
+- Source: git@github.com:isaacs/minimatch
+
+### mnemonist 0.38.3
+- License: MIT
+- Source: https://github.com/yomguithereal/mnemonist
+
+### mnth 2.0.0
+- License: MIT
+- Source: nextools/metarepo
+
+### ms 2.1.3
+- License: MIT
+- Source: vercel/ms
+
+### nanoid 3.3.16
+- License: MIT
+- Source: ai/nanoid
+
+### nise 6.1.5
+- License: BSD-3-Clause
+- Source: http://github.com/sinonjs/nise
+
+### nwsapi 2.2.24
+- License: MIT
+- Source: https://github.com/dperini/nwsapi
+
+### object-assign 4.1.1
+- License: MIT
+- Source: sindresorhus/object-assign
+
+### obliterator 1.6.1
+- License: MIT
+- Source: https://github.com/yomguithereal/obliterator
+
+### obug 2.1.4
+- License: MIT
+- Source: https://github.com/sxzz/obug
+
+### parse5 7.3.0
+- License: MIT
+- Source: https://github.com/inikulin/parse5
+
+### path-expression-matcher 1.6.2
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/path-expression-matcher
+
+### path-to-regexp 8.4.2
+- License: MIT
+- Source: https://github.com/pillarjs/path-to-regexp
+
+### pathe 2.0.3
+- License: MIT
+- Source: unjs/pathe
+
+### picocolors 1.1.1
+- License: ISC
+- Source: alexeyraspopov/picocolors
+
+### picomatch 4.0.5
+- License: MIT
+- Source: micromatch/picomatch
+
+### playwright 1.62.1
+- License: Apache-2.0
+- Source: https://github.com/microsoft/playwright
+
+### playwright-core 1.62.1
+- License: Apache-2.0
+- Source: https://github.com/microsoft/playwright
+
+### postcss 8.5.25
+- License: MIT
+- Source: postcss/postcss
+
+### pretty-format 27.5.1
+- License: MIT
+- Source: https://github.com/facebook/jest
+
+### prop-types 15.8.1
+- License: MIT
+- Source: facebook/prop-types
+
+### punycode 2.3.1
+- License: MIT
+- Source: https://github.com/mathiasbynens/punycode.js
+
+### react 19.2.8
+- License: MIT
+- Source: https://github.com/react/react
+
+### react-dom 19.2.8
+- License: MIT
+- Source: https://github.com/react/react
+
+### react-is 16.13.1
+- License: MIT
+- Source: https://github.com/facebook/react
+
+### react-is 17.0.2
+- License: MIT
+- Source: https://github.com/facebook/react
+
+### react-is 18.3.1
+- License: MIT
+- Source: https://github.com/facebook/react
+
+### react-router 8.3.0
+- License: MIT
+- Source: https://github.com/remix-run/react-router
+
+### react-transition-group 4.4.5
+- License: BSD-3-Clause
+- Source: https://github.com/reactjs/react-transition-group
+
+### redent 3.0.0
+- License: MIT
+- Source: sindresorhus/redent
+
+### rolldown 1.2.1
+- License: MIT
+- Source: https://github.com/rolldown/rolldown
+
+### rrweb-cssom 0.7.1
+- License: MIT
+- Source: rrweb-io/CSSOM
+
+### rrweb-cssom 0.8.0
+- License: MIT
+- Source: rrweb-io/CSSOM
+
+### rxjs 7.8.2
+- License: Apache-2.0
+- Source: https://github.com/reactivex/rxjs
+
+### safer-buffer 2.1.2
+- License: MIT
+- Source: https://github.com/ChALkeR/safer-buffer
+
+### saxes 6.0.0
+- License: ISC
+- Source: https://github.com/lddubeau/saxes
+
+### scheduler 0.27.0
+- License: MIT
+- Source: https://github.com/facebook/react
+
+### semver 5.7.2
+- License: ISC
+- Source: https://github.com/npm/node-semver
+
+### semver 7.8.5
+- License: ISC
+- Source: https://github.com/npm/node-semver
+
+### shimmer 1.2.1
+- License: BSD-2-Clause
+- Source: https://github.com/othiym23/shimmer
+
+### siginfo 2.0.0
+- License: ISC
+- Source: https://github.com/emilbayes/siginfo
+
+### sinon 18.0.1
+- License: BSD-3-Clause
+- Source: http://github.com/sinonjs/sinon
+
+### source-map 0.6.1
+- License: BSD-3-Clause
+- Source: http://github.com/mozilla/source-map
+
+### source-map-js 1.2.1
+- License: BSD-3-Clause
+- Source: 7rulnik/source-map-js
+
+### source-map-support 0.5.21
+- License: MIT
+- Source: https://github.com/evanw/node-source-map-support
+
+### stack-chain 1.3.7
+- License: MIT
+- Source: https://github.com/AndreasMadsen/stack-chain
+
+### stackback 0.0.2
+- License: MIT
+- Source: https://github.com/shtylman/node-stackback
+
+### std-env 4.2.0
+- License: MIT
+- Source: unjs/std-env
+
+### strip-indent 3.0.0
+- License: MIT
+- Source: sindresorhus/strip-indent
+
+### strnum 2.4.1
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/strnum
+
+### style-mod 4.1.3
+- License: MIT
+- Source: https://github.com/marijnh/style-mod
+
+### supports-color 7.2.0
+- License: MIT
+- Source: chalk/supports-color
+
+### symbol-tree 3.2.4
+- License: MIT
+- Source: https://github.com/jsdom/js-symbol-tree
+
+### tinybench 2.9.0
+- License: MIT
+- Source: tinylibs/tinybench
+
+### tinyexec 1.2.4
+- License: MIT
+- Source: https://github.com/tinylibs/tinyexec
+
+### tinyglobby 0.2.17
+- License: MIT
+- Source: https://github.com/SuperchupuDev/tinyglobby
+
+### tinyrainbow 3.1.1
+- License: MIT
+- Source: https://github.com/tinylibs/tinyrainbow
+
+### tldts 6.1.86
+- License: MIT
+- Source: ssh://git@github.com/remusao/tldts
+
+### tldts-core 6.1.86
+- License: MIT
+- Source: ssh://git@github.com/remusao/tldts
+
+### tough-cookie 5.1.2
+- License: BSD-3-Clause
+- Source: https://github.com/salesforce/tough-cookie
+
+### tr46 5.1.1
+- License: MIT
+- Source: https://github.com/jsdom/tr46
+
+### tslib 2.8.1
+- License: 0BSD
+- Source: https://github.com/Microsoft/tslib
+
+### tsx 4.23.1
+- License: MIT
+- Source: privatenumber/tsx
+
+### type-detect 4.0.8
+- License: MIT
+- Source: ssh://git@github.com/chaijs/type-detect
+
+### type-detect 4.1.0
+- License: MIT
+- Source: ssh://git@github.com/chaijs/type-detect
+
+### typescript 5.9.3
+- License: Apache-2.0
+- Source: https://github.com/microsoft/TypeScript
+
+### ulid 2.4.0
+- License: MIT
+- Source: https://github.com/ulid/javascript
+
+### undici-types 7.18.2
+- License: MIT
+- Source: https://github.com/nodejs/undici
+
+### universalify 2.0.1
+- License: MIT
+- Source: https://github.com/RyanZim/universalify
+
+### uuid 11.1.1
+- License: MIT
+- Source: https://github.com/uuidjs/uuid
+
+### vite 8.2.0
+- License: MIT
+- Source: https://github.com/vitejs/vite
+
+### vitest 4.1.10
+- License: MIT
+- Source: https://github.com/vitest-dev/vitest
+
+### w3c-keyname 2.2.8
+- License: MIT
+- Source: https://github.com/marijnh/w3c-keyname
+
+### w3c-xmlserializer 5.0.0
+- License: MIT
+- Source: jsdom/w3c-xmlserializer
+
+### webidl-conversions 7.0.0
+- License: BSD-2-Clause
+- Source: jsdom/webidl-conversions
+
+### weekstart 1.1.0
+- License: MIT
+- Source: https://github.com/gamtiq/weekstart
+
+### weekstart 2.0.0
+- License: MIT
+- Source: https://github.com/gamtiq/weekstart
+
+### whatwg-encoding 3.1.1
+- License: MIT
+- Source: jsdom/whatwg-encoding
+
+### whatwg-mimetype 4.0.0
+- License: MIT
+- Source: jsdom/whatwg-mimetype
+
+### whatwg-url 14.2.0
+- License: MIT
+- Source: jsdom/whatwg-url
+
+### why-is-node-running 2.3.0
+- License: MIT
+- Source: https://github.com/mafintosh/why-is-node-running
+
+### ws 8.21.1
+- License: MIT
+- Source: https://github.com/websockets/ws
+
+### xml-name-validator 5.0.0
+- License: Apache-2.0
+- Source: jsdom/xml-name-validator
+
+### xml-naming 0.3.0
+- License: MIT
+- Source: https://github.com/NaturalIntelligence/xml-naming
+
+### xmlchars 2.2.0
+- License: MIT
+- Source: https://github.com/lddubeau/xmlchars
+
+### yaml 1.10.3
+- License: ISC
+- Source: github:eemeli/yaml
+
+### yaml 2.9.0
+- License: ISC
+- Source: github:eemeli/yaml

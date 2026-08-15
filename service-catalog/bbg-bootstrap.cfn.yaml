@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Bedrock Budget Guard operator-config bootstrap. Writes /bbg/operator-config
+  to SSM so a subsequent `cdk deploy PipelineStack` finds everything it needs.
+  No application resources (Lambdas, DDB, Cognito) created here — those land
+  via the pipeline. See docs/service-catalog.md.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: GitHub source }
+        Parameters: [GitHubOwner, GitHubBranch]
+      - Label: { default: Custom domain (optional) }
+        Parameters:
+          - HostedZoneName
+          - HostedZoneId
+          - DevDomainName
+          - ProdDomainName
+      - Label: { default: Notifications + alerts }
+        Parameters: [AlertEmail, NotifySenderAddress]
+      - Label: { default: CUR 2.0 reconciler (optional) }
+        Parameters: [CurS3Bucket, CurS3Prefix]
+      - Label: { default: Operations }
+        Parameters: [DisableConfigStack]
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: |
+      GitHub user or org that owns your fork of the BBG repo. Required.
+      Example: your-github-org
+    AllowedPattern: '^[A-Za-z0-9-]+$'
+
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: Branch the pipeline polls. Default = main.
+    AllowedPattern: '^[A-Za-z0-9._/-]+$'
+
+  HostedZoneName:
+    Type: String
+    Default: ''
+    Description: |
+      Route53 hosted zone (e.g. example.com). Leave blank to deploy
+      without a custom domain (the SPA serves from CloudFront's
+      default *.cloudfront.net URL — fine for evaluation, not
+      recommended for prod because WebAuthn relying-party ID is
+      tied to the hostname).
+
+  HostedZoneId:
+    Type: String
+    Default: ''
+    Description: Route53 zone ID (e.g. Z0123456789ABCDEFGHIJ). Required when HostedZoneName is set.
+
+  DevDomainName:
+    Type: String
+    Default: ''
+    Description: Subdomain attached to the dev stage (e.g. bbg-dev.example.com).
+
+  ProdDomainName:
+    Type: String
+    Default: ''
+    Description: Subdomain attached to the prod stage (e.g. bbg.example.com).
+
+  AlertEmail:
+    Type: String
+    Description: |
+      Email address subscribed to the SNS alerts topic so operators
+      get paged on meter unjoined / enforcement errors / canary
+      failures. Required.
+    AllowedPattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+
+  NotifySenderAddress:
+    Type: String
+    Default: ''
+    Description: |
+      SES-verified sender address used for budget-threshold and
+      enforcement emails sent to the Cognito user mapped to a
+      breached principal. Leave blank to no-op the notify Lambda
+      (alarms still fire via SNS to AlertEmail). The address (or
+      its parent domain) must be verified in SES in this region.
+
+  CurS3Bucket:
+    Type: String
+    Default: ''
+    Description: |
+      S3 bucket where your BCM Data Exports CUR 2.0 export delivers
+      Parquet files. Skipping this skips the Glue crawler and the
+      reconciler reports an empty delta until set.
+
+  CurS3Prefix:
+    Type: String
+    Default: cur2-iam
+    Description: S3 path prefix under CurS3Bucket. Default cur2-iam.
+
+  DisableConfigStack:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: |
+      Skip the AWS Config recorder + managed rules. Set to true when
+      Control Tower / Security Hub already manages Config in this
+      account.
+
+Conditions:
+  HasHostedZone: !Not [!Equals [!Ref HostedZoneName, '']]
+  HasDevDomain: !Not [!Equals [!Ref DevDomainName, '']]
+  HasProdDomain: !Not [!Equals [!Ref ProdDomainName, '']]
+  HasNotifySender: !Not [!Equals [!Ref NotifySenderAddress, '']]
+  HasCurBucket: !Not [!Equals [!Ref CurS3Bucket, '']]
+
+Resources:
+  # The single SSM parameter the BBG synth machinery reads. Storing one
+  # JSON document (rather than fanning out to N parameters) matches the
+  # existing operator-config.ts shape — see docs/operator-config.md.
+  OperatorConfig:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /bbg/operator-config
+      Type: String
+      Description: |
+        BBG operator config. Created by the Service Catalog bootstrap
+        product. See docs/operator-config.md for the schema.
+      Value: !Sub
+        - |
+          {
+            "bbg:githubOwner": "${GitHubOwner}",
+            "bbg:githubBranch": "${GitHubBranch}",
+            ${HostedZone}
+            ${Domains}
+            ${Alert}
+            ${NotifySender}
+            ${Cur}
+            "bbg:disableConfigStack": ${DisableConfigStack}
+          }
+        - HostedZone: !If
+            - HasHostedZone
+            - !Sub '"bbg:hostedZoneName": "${HostedZoneName}", "bbg:hostedZoneId": "${HostedZoneId}",'
+            - ''
+          Domains: !If
+            - HasDevDomain
+            - !Sub
+              - '"bbg:domainNames": { "dev": "${DevDomainName}"${ProdSep} },'
+              - ProdSep: !If [HasProdDomain, !Sub ', "prod": "${ProdDomainName}"', '']
+            - !If
+              - HasProdDomain
+              - !Sub '"bbg:domainNames": { "prod": "${ProdDomainName}" },'
+              - ''
+          Alert: !Sub '"bbg:alertEmail": "${AlertEmail}",'
+          NotifySender: !If
+            - HasNotifySender
+            - !Sub '"bbg:notifySenderAddress": "${NotifySenderAddress}",'
+            - ''
+          Cur: !If
+            - HasCurBucket
+            - !Sub '"bbg:curS3Bucket": "${CurS3Bucket}", "bbg:curS3Prefix": "${CurS3Prefix}",'
+            - ''
+      Tags:
+        Project: bbg
+        ManagedBy: ServiceCatalog
+
+Outputs:
+  OperatorConfigParam:
+    Description: Name of the SSM parameter the BBG pipeline reads at synth time.
+    Value: !Ref OperatorConfig
+
+  NextSteps:
+    Description: Run these commands from CloudShell in this account to deploy BBG.
+    Value: !Sub |
+      git clone https://github.com/${GitHubOwner}/sample-bedrock-spend-budget-guardrails.git
+      cd sample-bedrock-spend-budget-guardrails
+      npm install
+      npx cdk bootstrap aws://${AWS::AccountId}/${AWS::Region}
+      npx cdk deploy PipelineStack

@@ -1,0 +1,16 @@
+# .semgrepignore — paths excluded from semgrep scans.
+# Semgrep automatically respects .gitignore patterns; this file adds extras.
+
+# Lock files (auto-generated, not authored code).
+package-lock.json
+
+# Build artifacts.
+**/dist/
+**/cdk.out/
+**/.vite/
+web/dist/
+infra/cdk.out/
+
+# Test fixtures (review separately from production code).
+**/test/fixtures/
+**/__mocks__/

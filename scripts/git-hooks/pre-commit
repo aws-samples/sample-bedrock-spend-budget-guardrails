@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+# doc-drift pre-commit hook (advisory, non-blocking).
+#
+# Enable it once per clone with:  npm run hooks:install
+# (sets core.hooksPath to scripts/git-hooks so this file is used).
+#
+# Prints a reminder when code in watched areas (lambda/src, infra/lib,
+# web/src/pages) is staged without a matching docs/ or README change. It does
+# NOT block the commit unless BBG_DOCS_CHECK_STRICT=1 is set.
+
+if command -v node >/dev/null 2>&1; then
+  node "$(git rev-parse --show-toplevel)/scripts/docs-check.mjs" || exit $?
+fi
+
+exit 0

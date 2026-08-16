@@ -160,9 +160,43 @@ If your account uses Mantle-served models, treat this sample's totals as coverin
 
 ## 🛠️ Setup
 
+### ⚡ One command (recommended for a first install)
+
+```bash
+git clone https://github.com/<your-fork>/sample-bedrock-spend-budget-guardrails.git
+cd sample-bedrock-spend-budget-guardrails
+./scripts/install.sh --github-owner <your-fork-owner> --email you@example.com
+```
+
+That replaces Steps 1–5 below. It runs preflight checks, bootstraps CDK in both
+required regions, writes `/bbg/operator-config`, creates the GitHub connection,
+deploys the pipeline, waits for it to go green, seeds your admin user, and prints
+the sign-in URL and a one-time password.
+
+**One step needs a browser.** A CodeConnections connection is created `PENDING`
+and only becomes `AVAILABLE` after you authorize the AWS Connector for GitHub —
+there is no API for it. The script prints the console link, opens it for you, and
+polls until you're done.
+
+**Re-running is safe.** Every step detects existing state, so if something fails
+partway through (or you stop it at the browser step), just run the same command
+again and it resumes.
+
+```
+./scripts/install.sh --help        # all options
+--region <region>                  # home/metered region (default us-west-2)
+--stage <dev|prod>                 # which stage to seed + report
+--skip-fork-check                  # private forks 404 to an anonymous check
+```
+
+Prefer to do it by hand, or need a non-default topology? The manual steps below
+are the same operations, unchanged.
+
+---
+
 There are two paths:
 
-- **Path A — Service Catalog launch** (one click per account once a central admin has imported BBG into your Org's Service Catalog). Run order: read [`docs/service-catalog.md`](docs/service-catalog.md), then come back to Step 4 below for `cdk deploy PipelineStack`.
+- **Path A — Service Catalog launch** (one click per account once a central admin has imported BBG into your Org's Service Catalog). Run order: read [`docs/service-catalog.md`](docs/service-catalog.md), then come back here — the Service Catalog product writes `/bbg/operator-config` for you, so `./scripts/install.sh` (above) skips that step and continues from the GitHub connection onward.
 - **Path B — Direct clone + CDK** (described below). The path you'd take if you're the central admin packaging BBG for everyone else, or if you're evaluating BBG in a single account.
 
 Either way, the application that gets deployed is identical — the only difference is whether `/bbg/operator-config` was written by hand or by the SC bootstrap product.

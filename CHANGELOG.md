@@ -8,6 +8,17 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-16
+
+### Added
+- **One-command first-time install** — `./scripts/install.sh --github-owner <owner> --email you@example.com` replaces Setup Steps 1–5. It runs preflight checks, bootstraps CDK in **both** required regions, writes `/bbg/operator-config`, creates the GitHub connection, deploys the pipeline, watches it to green, seeds the Cognito admin user, and prints the sign-in URL plus a one-time generated password. Every step detects existing state, so a failure partway through (or stopping at the browser step) just needs the same command again — it resumes rather than starting over. One step still needs a human: a CodeConnections connection is created `PENDING` and there is no API to authorize it, so the script prints and opens the console link and polls until it flips to `AVAILABLE`. Preflight deliberately front-loads the failures that otherwise surface 20+ minutes into a deploy: a fork GitHub can't confirm (the top cause of a Source-stage failure), `--github-owner aws-samples` (a pipeline there can never be triggered by your pushes), missing Bedrock model access (deploys fine, meters nothing), and Node < 20. `--skip-fork-check` covers private forks, which 404 to an anonymous probe.
+
+### Changed
+- `scripts/bootstrap.sh` now bootstraps **`us-east-1` as well as the home region**. It only ever did the home region, which set operators up for the confusing `Invalid principal in policy` failure the README warns about — the CloudFront WAF WebACL and any ACM certificate are CloudFront-scoped and can only live in `us-east-1`, so a support stack is created there even for a single-region install. For a full install it now points at `install.sh`.
+
+### Fixed
+- **Re-installing a stage over retained resources now explains itself.** BBG gives the spend ledger, audit tables, and log buckets `RETAIN` deletion policies on purpose, so billing history survives a teardown — which means re-deploying the **same** stage collides with the survivors, and CloudFormation surfaces it only as a generic `AWS::EarlyValidation::ResourceExistenceCheck` hook failure. The installer now names the three resource classes involved (S3 buckets, DynamoDB tables, Bedrock invocation log groups) and prints the commands to inspect and clear them, or suggests deploying a different `--stage`.
+
 ## [1.0.0] - 2026-08-15
 
 Initial public release. `1.0.0` rather than `0.x` because the metering → budget → enforcement loop and the multi-account/multi-region topology are complete and have run continuously in a real AWS account; the version signals a stable public surface, not a preview. Published after an AWS Public Content Security Review and a full threat model.
@@ -31,5 +42,6 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.0
 [1.0.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.0.0

@@ -73,5 +73,5 @@ The bootstrap template is `aws cloudformation validate-template`-clean. New inst
 
 ## What this story does NOT cover
 
-- **The actual BBG application deploy** (`cdk deploy PipelineStack`) — that's the same path operators use today and is documented in [`README.md`](../README.md).
+- **The actual BBG application deploy** — documented in [`README.md`](../README.md). Either run `./scripts/install.sh` (it detects the `/bbg/operator-config` this product already wrote and continues from the GitHub connection), or `cdk deploy PipelineStack` by hand.
 - **Per-account scope claims** — each enrolled account gets its own Cognito user pool by virtue of running its own pipeline. Cross-account scope (one shared web app where a delegated admin sees only their accounts) is the multi-account control plane covered in [`docs/multi-account-multi-region.md`](multi-account-multi-region.md), and is orthogonal to Service Catalog packaging.

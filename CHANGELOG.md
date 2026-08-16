@@ -8,6 +8,15 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-16
+
+### Added
+- **Fork-update guidance** — a new [Updating to a new release](README.md#-updating-to-a-new-release) section. Because the pipeline deploys from *your* fork, upstream releases don't reach you automatically; taking one is `git fetch upstream --tags && git merge v<version> && git push origin main`, and the push is what redeploys. No `cdk deploy` is needed, since the pipeline self-mutates. Explains why this normally merges cleanly (your settings live in the `/bbg/operator-config` SSM parameter, which overrides `cdk.json` at synth, so a standard install edits no tracked files), and calls out the two things that do conflict if you edit them: `cdk.json` context values, and hand-edited `version` fields in the workspace `package.json` files — which conflict on every release.
+
+### Fixed
+- The quickstart and Setup Step 1 cloned `sample-bedrock-spend-budget-guardrails.git`, which is not the published repo name — corrected to `sample-bedrock-spend-budget-guardrails`. Both now also add the `upstream` remote, so a later update is two commands rather than a hunt for the right URL.
+- Prerequisites said only "a GitHub fork of this repo"; it now says why (you control when you take a release) and links the update path.
+
 ## [1.1.0] - 2026-08-16
 
 ### Added
@@ -42,6 +51,7 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.1
 [1.1.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.0
 [1.0.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.0.0

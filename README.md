@@ -163,10 +163,15 @@ If your account uses Mantle-served models, treat this sample's totals as coverin
 ### ⚡ One command (recommended for a first install)
 
 ```bash
-git clone https://github.com/<your-fork>/sample-bedrock-spend-budget-guardrails.git
+# Fork this repo on GitHub first — the GitOps pipeline deploys from YOUR fork.
+git clone https://github.com/<your-fork-owner>/sample-bedrock-spend-budget-guardrails.git
 cd sample-bedrock-spend-budget-guardrails
+git remote add upstream https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails.git
 ./scripts/install.sh --github-owner <your-fork-owner> --email you@example.com
 ```
+
+Adding the `upstream` remote now is what makes [taking a later
+release](#-updating-to-a-new-release) a two-command operation.
 
 That replaces Steps 1–5 below. It runs preflight checks, bootstraps CDK in both
 required regions, writes `/bbg/operator-config`, creates the GitHub connection,
@@ -207,7 +212,9 @@ Either way, the application that gets deployed is identical — the only differe
 - Bedrock model access in your target region (request via Bedrock console → Model access; the demo uses Claude Sonnet 4.6 + Haiku 4.5).
 - *(Optional)* A Route53 hosted zone you own, if you want a custom domain — BBG then serves at `sample-bedrock-spend-budget-guardrails-{dev,prod}.<your-domain>`. Without one, it works out of the box on the CloudFront `*.cloudfront.net` URL (sign-in uses the Cloudscape-native SRP/passkey flow, not the Cognito hosted-UI redirect, so no callback domain is needed).
 - Node.js 20+, npm 10+, Git.
-- A GitHub fork of this repo (for the GitOps pipeline).
+- A GitHub fork of this repo — the pipeline deploys from **your** fork, not from
+  `aws-samples`, so you control when you take a new release. See
+  [Updating to a new release](#-updating-to-a-new-release).
 
 > **No cost-allocation setup required.** BBG meters and enforces entirely off **CloudTrail Bedrock data events + Bedrock model-invocation logging**, joined on `requestId`. It does **not** depend on AWS *IAM Principal Cost Tracking*, activated cost-allocation tags, or any consistent tagging taxonomy — the core real-time loop works on a stock account out of the box. (Cost-allocation tags matter only for the **opt-in** secondary reconciliation layers — CUR 2.0 and AWS Budgets Actions — which BBG uses as a books-closing cross-check, never as the primary shutoff. Principal tags that *are* present get surfaced on the Identities directory for convenience, but no metering or enforcement decision reads them.)
 
@@ -233,8 +240,9 @@ The web app's `/admin/enroll` page runs a preflight check on load and surfaces a
 ### Step 1 — Clone + install
 
 ```bash
-git clone git@github.com:<your-fork>/sample-bedrock-spend-budget-guardrails.git ~/git/sample-bedrock-spend-budget-guardrails
-cd ~/git/sample-bedrock-spend-budget-guardrails
+git clone git@github.com:<your-fork-owner>/sample-bedrock-spend-budget-guardrails.git
+cd sample-bedrock-spend-budget-guardrails
+git remote add upstream https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails.git
 nvm use && npm ci
 ```
 
@@ -327,6 +335,59 @@ BBG deploys and runs fully without a Route53 domain — it serves from the Cloud
 - **You still must bootstrap `us-east-1`** (Step 4) — the CloudFront WAF lives there regardless of domain.
 
 Add a custom domain later by setting `bbg:hostedZoneName` + `bbg:hostedZoneId` + `bbg:domainNames` in operator-config and redeploying.
+
+## 🔄 Updating to a new release
+
+You deploy from **your fork**, so upstream releases don't reach you automatically.
+Taking one is a merge plus a push — the push is what triggers your pipeline.
+
+```bash
+git fetch upstream --tags
+git merge v1.1.0                 # or: git merge upstream/main for the tip
+git push origin main             # your pipeline redeploys from here
+```
+
+That's the whole update. You don't run `cdk deploy` again: pushing to your fork's
+`main` fires the CodePipeline Source action, and the pipeline is self-mutating, so
+changes to the pipeline itself apply on the same run. Watch it in the console →
+CodePipeline → `bbg-pipeline`.
+
+If you never added the `upstream` remote:
+
+```bash
+git remote add upstream https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails.git
+```
+
+**Prefer merging a tag over `upstream/main`.** Tags are the tested, released
+states; `main` between releases is not guaranteed to be one.
+
+### Why this usually merges cleanly
+
+Your account-specific settings live in the **SSM parameter**
+`/bbg/operator-config`, not in tracked files, and SSM overrides `cdk.json` at
+synth time. So the normal install edits **no** files in the repo, and there is
+nothing of yours for an upstream change to collide with. Your regions, alert
+email, domain, and feature flags survive every update untouched.
+
+That's the reason the setup docs push you toward SSM rather than editing
+`cdk.json`: it's not only about keeping account IDs out of git, it's what makes
+your fork cheap to keep current.
+
+If you *did* edit tracked files, expect to resolve those specific files on each
+update. Two cases worth knowing:
+
+| You changed | What happens |
+|---|---|
+| `cdk.json` context values | Conflicts only when a release touches the same keys. Move them to `/bbg/operator-config` and revert your `cdk.json` change to make it permanent — SSM wins at synth either way, so the local edit is doing nothing for you. |
+| `version` in any `package.json` | **Conflicts on every release.** The four workspace versions track upstream releases; don't hand-edit them. Resolve with `git checkout --theirs` on those files. |
+
+### After updating
+
+Check the release notes for anything operator-facing before or after you push:
+
+- **New optional config keys** — add them to `/bbg/operator-config` if you want them; every key is optional and defaults are safe.
+- **A MAJOR release** means a deployed install can't take the update without operator action (a renamed config key, a changed DynamoDB key schema, a removed route or metric). The notes say exactly what to do.
+- Re-running `./scripts/install.sh` after an update is safe and idempotent — it detects existing state, so it's a reasonable way to re-verify a deploy without doing anything by hand.
 
 ### 💻 Local development (skip the pipeline)
 

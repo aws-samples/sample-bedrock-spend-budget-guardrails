@@ -1,7 +1,7 @@
 import { gunzipSync } from 'node:zlib';
 import { DeleteCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { CloudWatchLogsEvent, Context, EventBridgeEvent } from 'aws-lambda';
-import { stripCrisPrefix } from '../shared/arn.js';
+import { canonicalizeCurPrincipal, stripCrisPrefix } from '../shared/arn.js';
 import { accountFromPrincipal } from '../shared/iam-cross-account.js';
 import { ddb, oneHourFromNowEpoch } from '../shared/ddb.js';
 import {
@@ -201,6 +201,17 @@ export interface BedrockInvocationLog {
    */
   modelId?: string;
   inferenceProfileArn?: string;
+  /**
+   * The caller's IAM principal, present directly in the invocation-log
+   * record. Verified live 2026-08-18 on both `Converse` and `Responses`
+   * records: `identity.arn` is an assumed-role STS ARN, e.g.
+   * `arn:aws:sts::111122223333:assumed-role/SomeRole/session`.
+   *
+   * This is a FALLBACK identity source only. The CloudTrail join stays
+   * primary because it also yields the SSO user and `sourceIdentity` that
+   * per-human enforcement needs, which this field does not carry.
+   */
+  identity?: { arn?: string };
   input?: {
     inputTokenCount?: number;
     cacheReadInputTokenCount?: number;
@@ -690,12 +701,31 @@ const processInvocation = async (log: BedrockInvocationLog): Promise<void> => {
   };
 
   const identity = await lookupIdentity(log.requestId);
-  if (!identity) {
-    await writePending(payload);
+  if (identity) {
+    await commitJoinedSpend(identity, payload);
     return;
   }
 
-  await commitJoinedSpend(identity, payload);
+  // The CloudTrail join missed. Before parking this in PendingMeter (1h TTL,
+  // after which the spend is lost), fall back to the identity the invocation
+  // log itself carries. This is what keeps an API whose CloudTrail eventName
+  // we do not yet allowlist from silently dropping spend — the failure mode
+  // observed for `Responses` before it was added.
+  const loggedArn = log.identity?.arn;
+  if (loggedArn) {
+    // Reuse the CUR normalizer: it collapses an STS assumed-role ARN to the
+    // base role ARN, which is exactly BBG's canonical principal key. SSO
+    // callers normalize to a best-effort sessionIssuer key (see its docstring)
+    // — the CloudTrail path remains the accurate source for those.
+    metrics.addMetric('MeterIdentityFromLog', MetricUnit.Count, 1);
+    await commitJoinedSpend(
+      { principal: `principal#${canonicalizeCurPrincipal(loggedArn)}` },
+      payload,
+    );
+    return;
+  }
+
+  await writePending(payload);
 };
 
 const commitJoinedSpend = async (

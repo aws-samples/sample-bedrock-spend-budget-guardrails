@@ -1,24 +1,24 @@
-import * as cdk from 'aws-cdk-lib';
-import * as cloudtrail from 'aws-cdk-lib/aws-cloudtrail';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as cwActions from 'aws-cdk-lib/aws-cloudwatch-actions';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import * as logsDest from 'aws-cdk-lib/aws-logs-destinations';
-import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as scheduler from 'aws-cdk-lib/aws-scheduler';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as snsSubs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
-import { Duration } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import { BbgNodejsFunction } from './constructs/nodejs-fn.js';
-import { BedrockLoggingConfig } from './constructs/bedrock-logging-config.js';
-import type { DataStack } from './data-stack.js';
+import * as cdk from "aws-cdk-lib";
+import * as cloudtrail from "aws-cdk-lib/aws-cloudtrail";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as events from "aws-cdk-lib/aws-events";
+import * as eventsTargets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as logsDest from "aws-cdk-lib/aws-logs-destinations";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as scheduler from "aws-cdk-lib/aws-scheduler";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as snsSubs from "aws-cdk-lib/aws-sns-subscriptions";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import { Duration } from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { BbgNodejsFunction } from "./constructs/nodejs-fn.js";
+import { BedrockLoggingConfig } from "./constructs/bedrock-logging-config.js";
+import type { DataStack } from "./data-stack.js";
 
 export interface MeteringStackProps extends cdk.StackProps {
   readonly stagePrefix: string;
@@ -88,9 +88,12 @@ export class MeteringStack extends cdk.Stack {
     super(scope, id, props);
 
     const { stagePrefix, data, meteredRegion, isHomeRegion } = props;
-    const removalPolicy = stagePrefix === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
+    const removalPolicy =
+      stagePrefix === "prod"
+        ? cdk.RemovalPolicy.RETAIN
+        : cdk.RemovalPolicy.DESTROY;
 
-    const dlq = new sqs.Queue(this, 'MeteringDlq', {
+    const dlq = new sqs.Queue(this, "MeteringDlq", {
       queueName: `${stagePrefix}-bbg-metering-dlq-${meteredRegion}`,
       retentionPeriod: Duration.days(14),
       encryption: sqs.QueueEncryption.SQS_MANAGED,
@@ -106,21 +109,22 @@ export class MeteringStack extends cdk.Stack {
     // region's AWS/SQS metric. So each MeteringStack owns its own alarm + a
     // regional alerts topic (subscribed to the same bbg:alertEmail as the
     // home-region bbg-alerts topic in observability-stack).
-    const dlqAlertTopic = new sns.Topic(this, 'MeteringDlqAlerts', {
+    const dlqAlertTopic = new sns.Topic(this, "MeteringDlqAlerts", {
       topicName: `${stagePrefix}-bbg-metering-alerts-${meteredRegion}`,
       displayName: `Bedrock Budget Guard metering alerts (${meteredRegion})`,
     });
-    const alertEmail = this.node.tryGetContext('bbg:alertEmail') as string | undefined;
+    const alertEmail = this.node.tryGetContext("bbg:alertEmail") as
+      string | undefined;
     if (alertEmail) {
       dlqAlertTopic.addSubscription(new snsSubs.EmailSubscription(alertEmail));
     }
-    new cloudwatch.Alarm(this, 'MeteringDlqNotEmptyAlarm', {
+    new cloudwatch.Alarm(this, "MeteringDlqNotEmptyAlarm", {
       alarmName: `${stagePrefix}-bbg-metering-dlq-not-empty-${meteredRegion}`,
       metric: new cloudwatch.Metric({
-        namespace: 'AWS/SQS',
-        metricName: 'ApproximateNumberOfMessagesVisible',
+        namespace: "AWS/SQS",
+        metricName: "ApproximateNumberOfMessagesVisible",
         dimensionsMap: { QueueName: dlq.queueName },
-        statistic: 'Maximum',
+        statistic: "Maximum",
         period: Duration.minutes(5),
       }),
       threshold: 0,
@@ -138,7 +142,8 @@ export class MeteringStack extends cdk.Stack {
     // (no TTL written). Override via the `bbg:spendRetentionMonths` operator
     // config / context key. The S3 ledger is the permanent archive regardless.
     const spendRetentionMonths =
-      (this.node.tryGetContext('bbg:spendRetentionMonths') as number | undefined) ?? 13;
+      (this.node.tryGetContext("bbg:spendRetentionMonths") as
+        number | undefined) ?? 13;
 
     // Common environment for all metering Lambdas.
     const commonEnv = {
@@ -160,13 +165,13 @@ export class MeteringStack extends cdk.Stack {
 
     // CWL log group + Bedrock invocation logging config + Trail. These
     // live in the metered region in BOTH topologies (home + non-home).
-    this.bedrockLogGroup = new logs.LogGroup(this, 'BedrockInvocationLogs', {
+    this.bedrockLogGroup = new logs.LogGroup(this, "BedrockInvocationLogs", {
       logGroupName: `/aws/bedrock/${stagePrefix}-invocations-${meteredRegion}`,
       retention: logs.RetentionDays.TWO_WEEKS,
       removalPolicy,
     });
 
-    new BedrockLoggingConfig(this, 'LoggingConfig', {
+    new BedrockLoggingConfig(this, "LoggingConfig", {
       logGroup: this.bedrockLogGroup,
       region: meteredRegion,
     });
@@ -190,22 +195,27 @@ export class MeteringStack extends cdk.Stack {
     // NOT free). We do NOT add data-event selectors here, so there is no
     // basic-vs-advanced selector clobber (the failure mode of the removed
     // per-stage data-events trail).
-    const rawCreateTrail = this.node.tryGetContext('bbg:createManagementEventsTrail');
-    const createManagementTrail = rawCreateTrail !== false && rawCreateTrail !== 'false';
+    const rawCreateTrail = this.node.tryGetContext(
+      "bbg:createManagementEventsTrail",
+    );
+    const createManagementTrail =
+      rawCreateTrail !== false && rawCreateTrail !== "false";
     if (isHomeRegion && createManagementTrail) {
-      const mgmtTrailBucket = new s3.Bucket(this, 'ManagementTrailBucket', {
+      const mgmtTrailBucket = new s3.Bucket(this, "ManagementTrailBucket", {
         bucketName: `${stagePrefix}-bbg-mgmt-trail-${this.account}-${meteredRegion}`,
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         encryption: s3.BucketEncryption.KMS_MANAGED, // AWS-managed aws/s3 key — CT-compatible, satisfies CT.S3.PR.10.
         enforceSSL: true,
         removalPolicy,
-        autoDeleteObjects: stagePrefix !== 'prod',
-        lifecycleRules: [{ id: 'expire-mgmt-trail', expiration: Duration.days(7) }],
+        autoDeleteObjects: stagePrefix !== "prod",
+        lifecycleRules: [
+          { id: "expire-mgmt-trail", expiration: Duration.days(7) },
+        ],
       });
       // Multi-region + management events (L2 default is ReadWriteType.ALL), so
       // Bedrock API calls in every metered region land on that region's default
       // bus for the local BedrockApiRule / cross-region forwarder to pick up.
-      new cloudtrail.Trail(this, 'ManagementEventsTrail', {
+      new cloudtrail.Trail(this, "ManagementEventsTrail", {
         trailName: `${stagePrefix}-bbg-mgmt-${meteredRegion}`,
         bucket: mgmtTrailBucket,
         isMultiRegionTrail: true,
@@ -220,7 +230,9 @@ export class MeteringStack extends cdk.Stack {
       this.buildMeteredRegion(commonEnv, homeRegion, dlq);
     }
 
-    new cdk.CfnOutput(this, 'BedrockLogGroupName', { value: this.bedrockLogGroup.logGroupName });
+    new cdk.CfnOutput(this, "BedrockLogGroupName", {
+      value: this.bedrockLogGroup.logGroupName,
+    });
   }
 
   /**
@@ -235,40 +247,44 @@ export class MeteringStack extends cdk.Stack {
     const { stagePrefix } = this.parseProps();
     const meteredRegion = commonEnv.METERED_REGION;
 
-    this.meter = new BbgNodejsFunction(this, 'Meter', {
+    this.meter = new BbgNodejsFunction(this, "Meter", {
       functionName: `${stagePrefix}-bbg-meter-${meteredRegion}`,
-      handlerName: 'meter',
+      handlerName: "meter",
       timeout: Duration.seconds(30),
       memorySize: 512,
       environment: commonEnv,
       deadLetterQueue: dlq,
     });
 
-    this.identityCache = new BbgNodejsFunction(this, 'IdentityCache', {
+    this.identityCache = new BbgNodejsFunction(this, "IdentityCache", {
       functionName: `${stagePrefix}-bbg-identity-cache-${meteredRegion}`,
-      handlerName: 'identity-cache',
+      handlerName: "identity-cache",
       timeout: Duration.seconds(30),
       memorySize: 512,
       environment: commonEnv,
       deadLetterQueue: dlq,
     });
 
-    this.ledgerWriter = new BbgNodejsFunction(this, 'LedgerWriter', {
+    this.ledgerWriter = new BbgNodejsFunction(this, "LedgerWriter", {
       functionName: `${stagePrefix}-bbg-ledger-writer-${meteredRegion}`,
-      handlerName: 'ledger-writer',
+      handlerName: "ledger-writer",
       timeout: Duration.minutes(2),
       memorySize: 1024,
       environment: commonEnv,
       deadLetterQueue: dlq,
     });
 
-    this.inferenceProfileRefresher = new BbgNodejsFunction(this, 'InferenceProfileRefresher', {
-      functionName: `${stagePrefix}-bbg-inference-profile-refresher-${meteredRegion}`,
-      handlerName: 'inference-profile-refresher',
-      timeout: Duration.minutes(2),
-      memorySize: 256,
-      environment: commonEnv,
-    });
+    this.inferenceProfileRefresher = new BbgNodejsFunction(
+      this,
+      "InferenceProfileRefresher",
+      {
+        functionName: `${stagePrefix}-bbg-inference-profile-refresher-${meteredRegion}`,
+        handlerName: "inference-profile-refresher",
+        timeout: Duration.minutes(2),
+        memorySize: 256,
+        environment: commonEnv,
+      },
+    );
 
     // Grants — all to home-region resources, all in-region.
     data.runningSpend.grantReadWriteData(this.meter);
@@ -295,22 +311,29 @@ export class MeteringStack extends cdk.Stack {
     data.inferenceProfiles.grantReadWriteData(this.inferenceProfileRefresher);
     this.inferenceProfileRefresher.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['bedrock:ListInferenceProfiles', 'bedrock:GetInferenceProfile'],
-        resources: ['*'],
+        actions: [
+          "bedrock:ListInferenceProfiles",
+          "bedrock:GetInferenceProfile",
+        ],
+        resources: ["*"],
       }),
     );
 
     // Scheduler: daily at 02:00 UTC for inference-profile-refresher.
-    const inferenceProfileSchedulerRole = new iam.Role(this, 'InferenceProfileSchedulerRole', {
-      assumedBy: new iam.ServicePrincipal('scheduler.amazonaws.com'),
-    });
+    const inferenceProfileSchedulerRole = new iam.Role(
+      this,
+      "InferenceProfileSchedulerRole",
+      {
+        assumedBy: new iam.ServicePrincipal("scheduler.amazonaws.com"),
+      },
+    );
     this.inferenceProfileRefresher.grantInvoke(inferenceProfileSchedulerRole);
 
-    new scheduler.CfnSchedule(this, 'DailyInferenceProfileRefresh', {
+    new scheduler.CfnSchedule(this, "DailyInferenceProfileRefresh", {
       name: `${stagePrefix}-bbg-inference-profile-refresh-${meteredRegion}`,
-      flexibleTimeWindow: { mode: 'OFF' },
-      scheduleExpression: 'cron(0 2 * * ? *)',
-      scheduleExpressionTimezone: 'UTC',
+      flexibleTimeWindow: { mode: "OFF" },
+      scheduleExpression: "cron(0 2 * * ? *)",
+      scheduleExpressionTimezone: "UTC",
       target: {
         arn: this.inferenceProfileRefresher.functionArn,
         roleArn: inferenceProfileSchedulerRole.roleArn,
@@ -320,53 +343,74 @@ export class MeteringStack extends cdk.Stack {
     // identity-cache needs to read IAM tags + emit EventBridge events.
     this.identityCache.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['iam:ListUserTags', 'iam:ListRoleTags'],
-        resources: ['*'],
+        actions: ["iam:ListUserTags", "iam:ListRoleTags"],
+        resources: ["*"],
       }),
     );
     this.identityCache.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['events:PutEvents'],
-        resources: [`arn:aws:events:${this.region}:${this.account}:event-bus/default`],
+        actions: ["events:PutEvents"],
+        resources: [
+          `arn:aws:events:${this.region}:${this.account}:event-bus/default`,
+        ],
       }),
     );
 
     // CWL → meter (same-region subscription).
-    new logs.SubscriptionFilter(this, 'MeterSubscription', {
+    new logs.SubscriptionFilter(this, "MeterSubscription", {
       logGroup: this.bedrockLogGroup,
       destination: new logsDest.LambdaDestination(this.meter),
       filterPattern: logs.FilterPattern.allEvents(),
     });
 
     // CloudTrail Bedrock data events → identity-cache.
-    new events.Rule(this, 'BedrockApiRule', {
+    new events.Rule(this, "BedrockApiRule", {
       ruleName: `${stagePrefix}-bbg-bedrock-runtime-${meteredRegion}`,
       eventPattern: {
-        source: ['aws.bedrock-runtime', 'aws.bedrock', 'aws.bedrock-agent-runtime'],
-        detailType: ['AWS API Call via CloudTrail'],
+        source: [
+          "aws.bedrock-runtime",
+          "aws.bedrock",
+          "aws.bedrock-agent-runtime",
+        ],
+        detailType: ["AWS API Call via CloudTrail"],
         detail: {
           eventName: [
-            'InvokeModel',
-            'InvokeModelWithResponseStream',
-            'Converse',
-            'ConverseStream',
-            'InvokeAgent',
-            'Retrieve',
-            'RetrieveAndGenerate',
+            "InvokeModel",
+            "InvokeModelWithResponseStream",
+            "Converse",
+            "ConverseStream",
+            // OpenAI-compatible APIs on the /openai/v1 paths of bedrock-runtime. Verified
+            // 2026-08-18 against a live call: CloudTrail logs these as MANAGEMENT events
+            // (eventName 'Responses', eventCategory 'Management', managementEvent true,
+            // eventSource bedrock.amazonaws.com) carrying userIdentity + a requestID that
+            // matches the invocation-log record. Without them the meter writes to
+            // PendingMeter, the row TTLs out after 1h, and the spend is silently lost --
+            // reproduced before this fix.
+            "Responses",
+            "ChatCompletions",
+            "InvokeAgent",
+            "Retrieve",
+            "RetrieveAndGenerate",
           ],
         },
       },
-      targets: [new eventsTargets.LambdaFunction(this.identityCache, { deadLetterQueue: dlq })],
+      targets: [
+        new eventsTargets.LambdaFunction(this.identityCache, {
+          deadLetterQueue: dlq,
+        }),
+      ],
     });
 
     // bbg.identity-arrived events (emitted by identity-cache after a join) → meter.
-    new events.Rule(this, 'IdentityArrivedRule', {
+    new events.Rule(this, "IdentityArrivedRule", {
       ruleName: `${stagePrefix}-bbg-identity-arrived-${meteredRegion}`,
       eventPattern: {
-        source: ['bbg.metering'],
-        detailType: ['bbg.identity-arrived'],
+        source: ["bbg.metering"],
+        detailType: ["bbg.identity-arrived"],
       },
-      targets: [new eventsTargets.LambdaFunction(this.meter, { deadLetterQueue: dlq })],
+      targets: [
+        new eventsTargets.LambdaFunction(this.meter, { deadLetterQueue: dlq }),
+      ],
     });
 
     // an earlier change Phase 1b: cross-region forwarded Bedrock invocation events
@@ -374,13 +418,15 @@ export class MeteringStack extends cdk.Stack {
     // consumes them — the event detail carries the original CWL
     // message + sourceRegion so the meter can do region-aware
     // pricing.
-    new events.Rule(this, 'RemoteBedrockInvocationRule', {
+    new events.Rule(this, "RemoteBedrockInvocationRule", {
       ruleName: `${stagePrefix}-bbg-remote-bedrock-invocation`,
       eventPattern: {
-        source: ['bbg.metering'],
-        detailType: ['bbg.bedrock-invocation'],
+        source: ["bbg.metering"],
+        detailType: ["bbg.bedrock-invocation"],
       },
-      targets: [new eventsTargets.LambdaFunction(this.meter, { deadLetterQueue: dlq })],
+      targets: [
+        new eventsTargets.LambdaFunction(this.meter, { deadLetterQueue: dlq }),
+      ],
     });
 
     // RunningSpend stream → ledger-writer.
@@ -411,9 +457,9 @@ export class MeteringStack extends cdk.Stack {
     const { stagePrefix } = this.parseProps();
     const meteredRegion = commonEnv.METERED_REGION;
 
-    this.cwlForwarder = new BbgNodejsFunction(this, 'CwlForwarder', {
+    this.cwlForwarder = new BbgNodejsFunction(this, "CwlForwarder", {
       functionName: `${stagePrefix}-bbg-cwl-forwarder-${meteredRegion}`,
-      handlerName: 'cwl-forwarder',
+      handlerName: "cwl-forwarder",
       timeout: Duration.seconds(30),
       memorySize: 256,
       environment: commonEnv,
@@ -427,13 +473,15 @@ export class MeteringStack extends cdk.Stack {
     // Allow the forwarder to PutEvents in the home region.
     this.cwlForwarder.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['events:PutEvents'],
-        resources: [`arn:aws:events:${homeRegion}:${this.account}:event-bus/default`],
+        actions: ["events:PutEvents"],
+        resources: [
+          `arn:aws:events:${homeRegion}:${this.account}:event-bus/default`,
+        ],
       }),
     );
 
     // CWL → forwarder (same-region subscription).
-    new logs.SubscriptionFilter(this, 'CwlForwarderSubscription', {
+    new logs.SubscriptionFilter(this, "CwlForwarderSubscription", {
       logGroup: this.bedrockLogGroup,
       destination: new logsDest.LambdaDestination(this.cwlForwarder),
       filterPattern: logs.FilterPattern.allEvents(),
@@ -443,34 +491,49 @@ export class MeteringStack extends cdk.Stack {
     // events: rule sits on this region's default bus, target = home
     // region's default bus. Same-account + same-Org cross-region
     // routing requires only an IAM role assumed by EventBridge.
-    const crossRegionEventRole = new iam.Role(this, 'CrossRegionEventRole', {
-      assumedBy: new iam.ServicePrincipal('events.amazonaws.com'),
+    const crossRegionEventRole = new iam.Role(this, "CrossRegionEventRole", {
+      assumedBy: new iam.ServicePrincipal("events.amazonaws.com"),
       inlinePolicies: {
         PutEventsHome: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
-              actions: ['events:PutEvents'],
-              resources: [`arn:aws:events:${homeRegion}:${this.account}:event-bus/default`],
+              actions: ["events:PutEvents"],
+              resources: [
+                `arn:aws:events:${homeRegion}:${this.account}:event-bus/default`,
+              ],
             }),
           ],
         }),
       },
     });
 
-    new events.Rule(this, 'BedrockApiRule', {
+    new events.Rule(this, "BedrockApiRule", {
       ruleName: `${stagePrefix}-bbg-bedrock-runtime-${meteredRegion}`,
       eventPattern: {
-        source: ['aws.bedrock-runtime', 'aws.bedrock', 'aws.bedrock-agent-runtime'],
-        detailType: ['AWS API Call via CloudTrail'],
+        source: [
+          "aws.bedrock-runtime",
+          "aws.bedrock",
+          "aws.bedrock-agent-runtime",
+        ],
+        detailType: ["AWS API Call via CloudTrail"],
         detail: {
           eventName: [
-            'InvokeModel',
-            'InvokeModelWithResponseStream',
-            'Converse',
-            'ConverseStream',
-            'InvokeAgent',
-            'Retrieve',
-            'RetrieveAndGenerate',
+            "InvokeModel",
+            "InvokeModelWithResponseStream",
+            "Converse",
+            "ConverseStream",
+            // OpenAI-compatible APIs on the /openai/v1 paths of bedrock-runtime. Verified
+            // 2026-08-18 against a live call: CloudTrail logs these as MANAGEMENT events
+            // (eventName 'Responses', eventCategory 'Management', managementEvent true,
+            // eventSource bedrock.amazonaws.com) carrying userIdentity + a requestID that
+            // matches the invocation-log record. Without them the meter writes to
+            // PendingMeter, the row TTLs out after 1h, and the spend is silently lost --
+            // reproduced before this fix.
+            "Responses",
+            "ChatCompletions",
+            "InvokeAgent",
+            "Retrieve",
+            "RetrieveAndGenerate",
           ],
         },
       },
@@ -478,7 +541,7 @@ export class MeteringStack extends cdk.Stack {
         new eventsTargets.EventBus(
           events.EventBus.fromEventBusArn(
             this,
-            'HomeDefaultBus',
+            "HomeDefaultBus",
             `arn:aws:events:${homeRegion}:${this.account}:event-bus/default`,
           ),
           { role: crossRegionEventRole },

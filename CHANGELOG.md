@@ -8,6 +8,18 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-18
+
+### Added
+- **The OpenAI-compatible Responses and Chat Completions APIs on `bedrock-runtime` are now metered and enforced.** AWS added the OpenAI GPT-5.6 models (Sol, Terra, Luna) to the `bedrock-runtime` endpoint, where inference is a CloudTrail **management** event and Bedrock model invocation logging applies. Verified against live calls: a `Responses` invocation produces an invocation-log record carrying `inputTokenCount`, `outputTokenCount`, `requestId`, and `identity.arn`, plus a CloudTrail event with `eventName: Responses`, `eventCategory: Management` and a matching `requestID`. `Responses` and `ChatCompletions` are now in the EventBridge `eventName` allowlist for the metering stack and for enrolled member accounts. Note these models require a `us.` or `global.` cross-Region inference profile on this endpoint — in-Region inference isn't offered for them — and BBG resolves either profile to the underlying model id for pricing.
+- **Identity fallback from the invocation-log record.** When the CloudTrail join misses, the meter now derives the principal from the record's own `identity.arn` instead of parking the row in `PendingMeter` to expire. New `MeterIdentityFromLog` metric makes the fallback visible. The CloudTrail join stays primary because it also yields the SSO user and `sourceIdentity` that per-human enforcement needs.
+
+### Fixed
+- **Spend on the Responses API was silently lost.** Because `Responses` wasn't in the `eventName` allowlist, the identity join never happened: the row went to `PendingMeter`, its 1-hour TTL expired, and the spend was never committed — no error, only a `MeterUnjoined` bump. Reproduced end to end before the fix, with the unjoined row observed in the table.
+- **Corrected the documented API-surface caveat, which was wrong in three ways.** Coverage follows the **endpoint**, not the model: the README previously said proprietary GPT-5.x spend is "invisible to this sample", which is no longer true on `bedrock-runtime`. It also described Bedrock Runtime inference as a CloudTrail *data* event — it is a **management** event, which is precisely why BBG works. And it understated the permanent gap: some models are `bedrock-mantle`-only (as of 2026-08, xAI Grok 4.3, GPT-5.5, GPT-5.4, and the Claude Mythos family) and cannot be metered by this sample at any configuration.
+- **Named the enforcement bypass.** Mantle inference authorizes `bedrock-mantle:CreateInference`, a different IAM service prefix that the `bbg-deny-*` policy's `bedrock:*` actions cannot match — so Mantle is not merely a metering blind spot, a denied principal can still call it. This is now stated in the README rather than implied.
+- Corrected a comment in the pricing refresher asserting cross-Region SKUs are "usually higher" than in-Region. That holds for the Anthropic lineup but **not** for OpenAI GPT-5.6, where AWS prices Global *below* in-Region/Geo. SKU precedence is unchanged and still correct; the comment now warns that routing mode must become part of the pricing key if AWS publishes GPT-5.6 SKUs, since `stripCrisPrefix` currently collapses `global.` into the bare model id.
+
 ## [1.1.1] - 2026-08-16
 
 ### Added
@@ -51,7 +63,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.2.0
 [1.1.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.1
 [1.1.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.0
 [1.0.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.0.0

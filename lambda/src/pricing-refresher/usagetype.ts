@@ -57,10 +57,22 @@ const isExcluded = (usagetype: string, allowBatch = false): boolean => {
 // batch/flex $0.00012, standard $0.00023, priority $0.00040 — a 3.3x spread
 // decided purely by Pricing API response order without this).
 const SLA_TIER_PATTERNS = [/[_-]flex(?:[_-]|$)/i, /[_-]priority(?:[_-]|$)/i];
-// Cross-region / global inference variants. These are a DISTINCT (usually
-// higher) rate from the plain regional SKU, and BBG meters against the source
-// region's regional rate — so a plain regional on-demand SKU must always beat
-// its `_Global`/cross-region sibling. `_Global` is the FoundationModels
+// Cross-region / global inference variants. These are a DISTINCT rate from the
+// plain regional SKU, and BBG meters against the source region's regional rate
+// — so a plain regional on-demand SKU must always beat its `_Global`/
+// cross-region sibling for the BARE model id.
+//
+// CAUTION (2026-08-18): the direction of that rate difference is NOT uniform.
+// It was originally written assuming cross-region is "usually higher", which is
+// true for the Anthropic lineup but FALSE for OpenAI GPT-5.6, where AWS prices
+// Global BELOW in-Region/Geo. Precedence here is still correct — it only picks
+// which SKU fills the BARE model's dimension — but it means a caller who used a
+// `global.` inference profile can be metered at the higher regional rate.
+//
+// That is tolerable today only because GPT-5.6 has no Price List SKU at all and
+// runs on manual override rows. When AWS publishes real GPT-5.6 SKUs, routing
+// mode has to become part of the pricing KEY rather than something we collapse
+// away in `stripCrisPrefix`; until then this comment is the warning. `_Global` is the FoundationModels
 // CamelCase spelling (`USE1_InputTokenCount_Global-Units`); `cross-region` /
 // `cross-region-global` is the AmazonBedrock kebab spelling.
 const CROSS_REGION_PATTERNS = [/cross[_-]region/i, /[_-]global(?:[_-]|$)/i];

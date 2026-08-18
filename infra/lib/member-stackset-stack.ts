@@ -1,6 +1,6 @@
-import * as cdk from 'aws-cdk-lib';
-import * as cloudformation from 'aws-cdk-lib/aws-cloudformation';
-import { Construct } from 'constructs';
+import * as cdk from "aws-cdk-lib";
+import * as cloudformation from "aws-cdk-lib/aws-cloudformation";
+import { Construct } from "constructs";
 
 export interface EnrolledMemberAccount {
   readonly accountId: string;
@@ -138,11 +138,14 @@ export class MemberStackSetStack extends cdk.Stack {
     // to accounts the SERVICE_MANAGED StackSet can't reach anyway.
     let effectiveEnrolledOus = enrolledOus;
     let effectiveEnrolledOrgAccounts = enrolledOrgAccounts;
-    if (enrolledWholeOrg && (enrolledOus.length > 0 || enrolledOrgAccounts.length > 0)) {
+    if (
+      enrolledWholeOrg &&
+      (enrolledOus.length > 0 || enrolledOrgAccounts.length > 0)
+    ) {
       cdk.Annotations.of(this).addInfo(
         `[${stagePrefix}] enrolledWholeOrg is active — skipping ${enrolledOus.length} per-OU and ` +
           `${enrolledOrgAccounts.length} per-account SERVICE_MANAGED enrollments. They remain in ` +
-          'SSM and will reactivate when whole-org is turned off.',
+          "SSM and will reactivate when whole-org is turned off.",
       );
       effectiveEnrolledOus = [];
       effectiveEnrolledOrgAccounts = [];
@@ -159,14 +162,14 @@ export class MemberStackSetStack extends cdk.Stack {
     // depth). Omitted with a warning when the Org ID isn't available —
     // keeps single-account / no-Organizations deploys working.
     const enforcementTrustCondition = organizationId
-      ? { StringEquals: { 'aws:PrincipalOrgID': organizationId } }
+      ? { StringEquals: { "aws:PrincipalOrgID": organizationId } }
       : undefined;
     if (!enforcementTrustCondition) {
       cdk.Annotations.of(this).addWarning(
         `[${stagePrefix}] bbg:organizationId is not set — the member bbg-enforcement trust ` +
-          'policy will rely on the home-role-ARN allowlist alone (no aws:PrincipalOrgID ' +
-          'condition). Set bbg:organizationId in operator-config to enable the ENF-1 ' +
-          'defence-in-depth condition.',
+          "policy will rely on the home-role-ARN allowlist alone (no aws:PrincipalOrgID " +
+          "condition). Set bbg:organizationId in operator-config to enable the ENF-1 " +
+          "defence-in-depth condition.",
       );
     }
 
@@ -181,8 +184,8 @@ export class MemberStackSetStack extends cdk.Stack {
     const readinessReaderPrincipalArn = `arn:aws:iam::${homeAccountId}:role/${stagePrefix}-bbg-readiness`;
     const readinessReaderTrustCondition = {
       StringEquals: {
-        'sts:RoleSessionName': 'BedrockAttributionAudit',
-        ...(organizationId ? { 'aws:PrincipalOrgID': organizationId } : {}),
+        "sts:RoleSessionName": "BedrockAttributionAudit",
+        ...(organizationId ? { "aws:PrincipalOrgID": organizationId } : {}),
       },
     };
 
@@ -233,26 +236,26 @@ def handler(event, _ctx):
     // same-region log group; CWL subscription filters to Lambda are
     // same-region only).
     const templateBody = {
-      AWSTemplateFormatVersion: '2010-09-09',
+      AWSTemplateFormatVersion: "2010-09-09",
       Description: `BBG (${stagePrefix}) cross-account IAM roles + ingest. Deployed via StackSet from home account ${homeAccountId}.`,
       Conditions: {
-        IsHomeRegion: { 'Fn::Equals': [{ Ref: 'AWS::Region' }, homeRegion] },
+        IsHomeRegion: { "Fn::Equals": [{ Ref: "AWS::Region" }, homeRegion] },
       },
       Resources: {
         BbgEnforcementRole: {
-          Type: 'AWS::IAM::Role',
-          Condition: 'IsHomeRegion',
+          Type: "AWS::IAM::Role",
+          Condition: "IsHomeRegion",
           Properties: {
-            RoleName: 'bbg-enforcement',
+            RoleName: "bbg-enforcement",
             Description:
-              'BBG cross-account enforcement role. Trusted by the home-account enforcement Lambda to attach bbg-deny-* policies in this member account.',
+              "BBG cross-account enforcement role. Trusted by the home-account enforcement Lambda to attach bbg-deny-* policies in this member account.",
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
+                  Effect: "Allow",
                   Principal: { AWS: homeEnforcementRoleArns },
-                  Action: 'sts:AssumeRole',
+                  Action: "sts:AssumeRole",
                   // ENF-1: defence-in-depth Org constraint (added only when
                   // the Org ID is known at synth time).
                   ...(enforcementTrustCondition
@@ -263,58 +266,67 @@ def handler(event, _ctx):
             },
             Policies: [
               {
-                PolicyName: 'BbgEnforcementInline',
+                PolicyName: "BbgEnforcementInline",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Sid: 'BbgManageDenyPolicies',
-                      Effect: 'Allow',
+                      Sid: "BbgManageDenyPolicies",
+                      Effect: "Allow",
                       Action: [
-                        'iam:CreatePolicy',
-                        'iam:CreatePolicyVersion',
-                        'iam:DeletePolicy',
-                        'iam:DeletePolicyVersion',
-                        'iam:GetPolicy',
-                        'iam:ListPolicyVersions',
-                        'iam:ListEntitiesForPolicy',
+                        "iam:CreatePolicy",
+                        "iam:CreatePolicyVersion",
+                        "iam:DeletePolicy",
+                        "iam:DeletePolicyVersion",
+                        "iam:GetPolicy",
+                        "iam:ListPolicyVersions",
+                        "iam:ListEntitiesForPolicy",
                       ],
                       // Use AWS::AccountId so the same template body works
                       // for every enrolled member; CFN substitutes it at
                       // deploy time per-account.
-                      Resource: { 'Fn::Sub': 'arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*' },
+                      Resource: {
+                        "Fn::Sub":
+                          "arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*",
+                      },
                     },
                     {
-                      Sid: 'BbgAttachDetachUser',
-                      Effect: 'Allow',
-                      Action: ['iam:AttachUserPolicy', 'iam:DetachUserPolicy'],
-                      Resource: { 'Fn::Sub': 'arn:aws:iam::${AWS::AccountId}:user/*' },
+                      Sid: "BbgAttachDetachUser",
+                      Effect: "Allow",
+                      Action: ["iam:AttachUserPolicy", "iam:DetachUserPolicy"],
+                      Resource: {
+                        "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:user/*",
+                      },
                       Condition: {
                         ArnEquals: {
-                          'iam:PolicyARN': {
-                            'Fn::Sub': 'arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*',
+                          "iam:PolicyARN": {
+                            "Fn::Sub":
+                              "arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*",
                           },
                         },
                       },
                     },
                     {
-                      Sid: 'BbgAttachDetachRole',
-                      Effect: 'Allow',
-                      Action: ['iam:AttachRolePolicy', 'iam:DetachRolePolicy'],
-                      Resource: { 'Fn::Sub': 'arn:aws:iam::${AWS::AccountId}:role/*' },
+                      Sid: "BbgAttachDetachRole",
+                      Effect: "Allow",
+                      Action: ["iam:AttachRolePolicy", "iam:DetachRolePolicy"],
+                      Resource: {
+                        "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/*",
+                      },
                       Condition: {
                         ArnEquals: {
-                          'iam:PolicyARN': {
-                            'Fn::Sub': 'arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*',
+                          "iam:PolicyARN": {
+                            "Fn::Sub":
+                              "arn:aws:iam::${AWS::AccountId}:policy/bbg-deny-*",
                           },
                         },
                       },
                     },
                     {
-                      Sid: 'BbgReadPrincipals',
-                      Effect: 'Allow',
-                      Action: ['iam:GetUser', 'iam:GetRole'],
-                      Resource: '*',
+                      Sid: "BbgReadPrincipals",
+                      Effect: "Allow",
+                      Action: ["iam:GetUser", "iam:GetRole"],
+                      Resource: "*",
                     },
                   ],
                 },
@@ -323,39 +335,46 @@ def handler(event, _ctx):
           },
         },
         BbgMeterReaderRole: {
-          Type: 'AWS::IAM::Role',
-          Condition: 'IsHomeRegion',
+          Type: "AWS::IAM::Role",
+          Condition: "IsHomeRegion",
           Properties: {
-            RoleName: 'bbg-meter-reader',
+            RoleName: "bbg-meter-reader",
             Description:
-              'BBG cross-account meter-reader role. Reserved for future use; trusted by the home-account meter Lambda.',
+              "BBG cross-account meter-reader role. Reserved for future use; trusted by the home-account meter Lambda.",
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
+                  Effect: "Allow",
                   Principal: { AWS: homeMeterRoleArn },
-                  Action: 'sts:AssumeRole',
+                  Action: "sts:AssumeRole",
                 },
               ],
             },
             Policies: [
               {
-                PolicyName: 'BbgMeterReaderInline',
+                PolicyName: "BbgMeterReaderInline",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Sid: 'BbgPutEventsHome',
-                      Effect: 'Allow',
-                      Action: ['events:PutEvents'],
+                      Sid: "BbgPutEventsHome",
+                      Effect: "Allow",
+                      Action: ["events:PutEvents"],
                       Resource: `arn:aws:events:*:${homeAccountId}:event-bus/default`,
                     },
                     {
-                      Sid: 'BbgDescribeLogs',
-                      Effect: 'Allow',
-                      Action: ['logs:Describe*', 'logs:GetLogEvents', 'logs:FilterLogEvents'],
-                      Resource: { 'Fn::Sub': 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/bedrock/*' },
+                      Sid: "BbgDescribeLogs",
+                      Effect: "Allow",
+                      Action: [
+                        "logs:Describe*",
+                        "logs:GetLogEvents",
+                        "logs:FilterLogEvents",
+                      ],
+                      Resource: {
+                        "Fn::Sub":
+                          "arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/bedrock/*",
+                      },
                     },
                   ],
                 },
@@ -375,66 +394,66 @@ def handler(event, _ctx):
         // scoping so the '*' is covered by the blanket AwsSolutions-IAM5
         // suppression in bin/app.ts).
         BbgReadinessReaderRole: {
-          Type: 'AWS::IAM::Role',
-          Condition: 'IsHomeRegion',
+          Type: "AWS::IAM::Role",
+          Condition: "IsHomeRegion",
           Properties: {
-            RoleName: 'bbg-readiness-reader',
+            RoleName: "bbg-readiness-reader",
             Description:
-              'BBG cross-account read-only readiness-audit role. Trusted by the home-account Readiness Lambda to run Bedrock-attribution discovery (Describe/List/Get only) in this member account.',
+              "BBG cross-account read-only readiness-audit role. Trusted by the home-account Readiness Lambda to run Bedrock-attribution discovery (Describe/List/Get only) in this member account.",
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
+                  Effect: "Allow",
                   Principal: { AWS: readinessReaderPrincipalArn },
-                  Action: 'sts:AssumeRole',
+                  Action: "sts:AssumeRole",
                   Condition: readinessReaderTrustCondition,
                 },
               ],
             },
             Policies: [
               {
-                PolicyName: 'BbgReadinessReadOnly',
+                PolicyName: "BbgReadinessReadOnly",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Sid: 'BbgReadinessDiscovery',
-                      Effect: 'Allow',
+                      Sid: "BbgReadinessDiscovery",
+                      Effect: "Allow",
                       Action: [
-                        'ce:GetCostAndUsage',
-                        'organizations:DescribeOrganization',
-                        'organizations:ListAccounts',
-                        'iam:ListRoles',
-                        'iam:ListUsers',
-                        'iam:ListRolePolicies',
-                        'iam:ListAttachedRolePolicies',
-                        'iam:GetRolePolicy',
-                        'iam:ListUserPolicies',
-                        'iam:ListAttachedUserPolicies',
-                        'iam:GetUserPolicy',
-                        'iam:GetPolicy',
-                        'iam:GetPolicyVersion',
-                        'iam:ListUserTags',
-                        'iam:ListRoleTags',
-                        'bedrock:ListInferenceProfiles',
-                        'bedrock:ListProjects',
-                        'bedrock:ListAgents',
-                        'bedrock:ListKnowledgeBases',
-                        'bedrock:ListCustomModels',
-                        'bedrock:ListGuardrails',
-                        'bedrock:ListProvisionedModelThroughputs',
-                        'bedrock:ListTagsForResource',
-                        'bedrock:GetModelInvocationLoggingConfiguration',
-                        'cloudwatch:ListMetrics',
-                        'cloudwatch:GetMetricData',
-                        'cloudwatch:GetMetricStatistics',
-                        'cloudtrail:DescribeTrails',
-                        'cloudtrail:GetEventSelectors',
-                        'bcm-data-exports:ListExports',
-                        'bcm-data-exports:GetExport',
+                        "ce:GetCostAndUsage",
+                        "organizations:DescribeOrganization",
+                        "organizations:ListAccounts",
+                        "iam:ListRoles",
+                        "iam:ListUsers",
+                        "iam:ListRolePolicies",
+                        "iam:ListAttachedRolePolicies",
+                        "iam:GetRolePolicy",
+                        "iam:ListUserPolicies",
+                        "iam:ListAttachedUserPolicies",
+                        "iam:GetUserPolicy",
+                        "iam:GetPolicy",
+                        "iam:GetPolicyVersion",
+                        "iam:ListUserTags",
+                        "iam:ListRoleTags",
+                        "bedrock:ListInferenceProfiles",
+                        "bedrock:ListProjects",
+                        "bedrock:ListAgents",
+                        "bedrock:ListKnowledgeBases",
+                        "bedrock:ListCustomModels",
+                        "bedrock:ListGuardrails",
+                        "bedrock:ListProvisionedModelThroughputs",
+                        "bedrock:ListTagsForResource",
+                        "bedrock:GetModelInvocationLoggingConfiguration",
+                        "cloudwatch:ListMetrics",
+                        "cloudwatch:GetMetricData",
+                        "cloudwatch:GetMetricStatistics",
+                        "cloudtrail:DescribeTrails",
+                        "cloudtrail:GetEventSelectors",
+                        "bcm-data-exports:ListExports",
+                        "bcm-data-exports:GetExport",
                       ],
-                      Resource: '*',
+                      Resource: "*",
                     },
                   ],
                 },
@@ -449,9 +468,9 @@ def handler(event, _ctx):
         // subscription below fans them out to the home-region default
         // event bus.
         BbgBedrockLogGroup: {
-          Type: 'AWS::Logs::LogGroup',
+          Type: "AWS::Logs::LogGroup",
           Properties: {
-            LogGroupName: { 'Fn::Sub': '/aws/bedrock/bbg-${AWS::Region}' },
+            LogGroupName: { "Fn::Sub": "/aws/bedrock/bbg-${AWS::Region}" },
             RetentionInDays: 14,
           },
         },
@@ -462,25 +481,27 @@ def handler(event, _ctx):
         // cationLoggingConfiguration API. ServiceToken points at the
         // BbgInvocationLoggingProvider Lambda below.
         BbgInvocationLoggingConfig: {
-          Type: 'Custom::BbgInvocationLogging',
-          DependsOn: ['BbgBedrockLogGroup', 'BbgInvocationLoggingProvider'],
+          Type: "Custom::BbgInvocationLogging",
+          DependsOn: ["BbgBedrockLogGroup", "BbgInvocationLoggingProvider"],
           Properties: {
-            ServiceToken: { 'Fn::GetAtt': ['BbgInvocationLoggingProvider', 'Arn'] },
-            LogGroupName: { 'Fn::Sub': '/aws/bedrock/bbg-${AWS::Region}' },
-            LogRoleArn: { 'Fn::GetAtt': ['BbgBedrockLogRole', 'Arn'] },
+            ServiceToken: {
+              "Fn::GetAtt": ["BbgInvocationLoggingProvider", "Arn"],
+            },
+            LogGroupName: { "Fn::Sub": "/aws/bedrock/bbg-${AWS::Region}" },
+            LogRoleArn: { "Fn::GetAtt": ["BbgBedrockLogRole", "Arn"] },
           },
         },
 
         BbgBedrockLogRole: {
-          Type: 'AWS::IAM::Role',
+          Type: "AWS::IAM::Role",
           Properties: {
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
-                  Principal: { Service: 'bedrock.amazonaws.com' },
-                  Action: 'sts:AssumeRole',
+                  Effect: "Allow",
+                  Principal: { Service: "bedrock.amazonaws.com" },
+                  Action: "sts:AssumeRole",
                   // N6: confused-deputy guard. Bedrock invocation logging is
                   // account+region scoped, so pin the trust to this member
                   // account (aws:SourceAccount) and its Bedrock ARNs
@@ -489,10 +510,13 @@ def handler(event, _ctx):
                   // region are substituted by CFN per stack-instance at
                   // deploy time.
                   Condition: {
-                    StringEquals: { 'aws:SourceAccount': { Ref: 'AWS::AccountId' } },
+                    StringEquals: {
+                      "aws:SourceAccount": { Ref: "AWS::AccountId" },
+                    },
                     ArnLike: {
-                      'aws:SourceArn': {
-                        'Fn::Sub': 'arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:*',
+                      "aws:SourceArn": {
+                        "Fn::Sub":
+                          "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:*",
                       },
                     },
                   },
@@ -501,14 +525,14 @@ def handler(event, _ctx):
             },
             Policies: [
               {
-                PolicyName: 'WriteInvocationLogs',
+                PolicyName: "WriteInvocationLogs",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Effect: 'Allow',
-                      Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
-                      Resource: { 'Fn::GetAtt': ['BbgBedrockLogGroup', 'Arn'] },
+                      Effect: "Allow",
+                      Action: ["logs:CreateLogStream", "logs:PutLogEvents"],
+                      Resource: { "Fn::GetAtt": ["BbgBedrockLogGroup", "Arn"] },
                     },
                   ],
                 },
@@ -518,40 +542,40 @@ def handler(event, _ctx):
         },
 
         BbgInvocationLoggingProviderRole: {
-          Type: 'AWS::IAM::Role',
+          Type: "AWS::IAM::Role",
           Properties: {
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
-                  Principal: { Service: 'lambda.amazonaws.com' },
-                  Action: 'sts:AssumeRole',
+                  Effect: "Allow",
+                  Principal: { Service: "lambda.amazonaws.com" },
+                  Action: "sts:AssumeRole",
                 },
               ],
             },
             ManagedPolicyArns: [
-              'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+              "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
             ],
             Policies: [
               {
-                PolicyName: 'ManageInvocationLogging',
+                PolicyName: "ManageInvocationLogging",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Effect: 'Allow',
+                      Effect: "Allow",
                       Action: [
-                        'bedrock:GetModelInvocationLoggingConfiguration',
-                        'bedrock:PutModelInvocationLoggingConfiguration',
-                        'bedrock:DeleteModelInvocationLoggingConfiguration',
+                        "bedrock:GetModelInvocationLoggingConfiguration",
+                        "bedrock:PutModelInvocationLoggingConfiguration",
+                        "bedrock:DeleteModelInvocationLoggingConfiguration",
                       ],
-                      Resource: '*',
+                      Resource: "*",
                     },
                     {
-                      Effect: 'Allow',
-                      Action: ['iam:PassRole'],
-                      Resource: { 'Fn::GetAtt': ['BbgBedrockLogRole', 'Arn'] },
+                      Effect: "Allow",
+                      Action: ["iam:PassRole"],
+                      Resource: { "Fn::GetAtt": ["BbgBedrockLogRole", "Arn"] },
                     },
                   ],
                 },
@@ -561,12 +585,14 @@ def handler(event, _ctx):
         },
 
         BbgInvocationLoggingProvider: {
-          Type: 'AWS::Lambda::Function',
+          Type: "AWS::Lambda::Function",
           Properties: {
-            FunctionName: { 'Fn::Sub': 'bbg-invocation-logging-provider-${AWS::Region}' },
-            Runtime: 'python3.12',
-            Handler: 'index.handler',
-            Role: { 'Fn::GetAtt': ['BbgInvocationLoggingProviderRole', 'Arn'] },
+            FunctionName: {
+              "Fn::Sub": "bbg-invocation-logging-provider-${AWS::Region}",
+            },
+            Runtime: "python3.12",
+            Handler: "index.handler",
+            Role: { "Fn::GetAtt": ["BbgInvocationLoggingProviderRole", "Arn"] },
             Timeout: 60,
             Code: {
               ZipFile: `import json, urllib.request
@@ -617,30 +643,30 @@ def handler(event, _ctx):
         // these events identically to the same-account cross-region
         // case (Phase 1b).
         BbgCwlForwarderRole: {
-          Type: 'AWS::IAM::Role',
+          Type: "AWS::IAM::Role",
           Properties: {
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
-                  Principal: { Service: 'lambda.amazonaws.com' },
-                  Action: 'sts:AssumeRole',
+                  Effect: "Allow",
+                  Principal: { Service: "lambda.amazonaws.com" },
+                  Action: "sts:AssumeRole",
                 },
               ],
             },
             ManagedPolicyArns: [
-              'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+              "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
             ],
             Policies: [
               {
-                PolicyName: 'PutEventsHome',
+                PolicyName: "PutEventsHome",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Effect: 'Allow',
-                      Action: ['events:PutEvents'],
+                      Effect: "Allow",
+                      Action: ["events:PutEvents"],
                       Resource: `arn:aws:events:${homeRegion}:${homeAccountId}:event-bus/default`,
                     },
                   ],
@@ -651,12 +677,12 @@ def handler(event, _ctx):
         },
 
         BbgCwlForwarder: {
-          Type: 'AWS::Lambda::Function',
+          Type: "AWS::Lambda::Function",
           Properties: {
-            FunctionName: { 'Fn::Sub': 'bbg-cwl-forwarder-${AWS::Region}' },
-            Runtime: 'python3.12',
-            Handler: 'index.handler',
-            Role: { 'Fn::GetAtt': ['BbgCwlForwarderRole', 'Arn'] },
+            FunctionName: { "Fn::Sub": "bbg-cwl-forwarder-${AWS::Region}" },
+            Runtime: "python3.12",
+            Handler: "index.handler",
+            Role: { "Fn::GetAtt": ["BbgCwlForwarderRole", "Arn"] },
             Timeout: 30,
             Environment: {
               Variables: {
@@ -669,22 +695,22 @@ def handler(event, _ctx):
         },
 
         BbgCwlForwarderInvokePermission: {
-          Type: 'AWS::Lambda::Permission',
+          Type: "AWS::Lambda::Permission",
           Properties: {
-            FunctionName: { 'Fn::GetAtt': ['BbgCwlForwarder', 'Arn'] },
-            Action: 'lambda:InvokeFunction',
-            Principal: { 'Fn::Sub': 'logs.${AWS::Region}.amazonaws.com' },
-            SourceArn: { 'Fn::GetAtt': ['BbgBedrockLogGroup', 'Arn'] },
+            FunctionName: { "Fn::GetAtt": ["BbgCwlForwarder", "Arn"] },
+            Action: "lambda:InvokeFunction",
+            Principal: { "Fn::Sub": "logs.${AWS::Region}.amazonaws.com" },
+            SourceArn: { "Fn::GetAtt": ["BbgBedrockLogGroup", "Arn"] },
           },
         },
 
         BbgCwlSubscription: {
-          Type: 'AWS::Logs::SubscriptionFilter',
-          DependsOn: ['BbgCwlForwarderInvokePermission'],
+          Type: "AWS::Logs::SubscriptionFilter",
+          DependsOn: ["BbgCwlForwarderInvokePermission"],
           Properties: {
-            LogGroupName: { 'Ref': 'BbgBedrockLogGroup' },
-            FilterPattern: '',
-            DestinationArn: { 'Fn::GetAtt': ['BbgCwlForwarder', 'Arn'] },
+            LogGroupName: { Ref: "BbgBedrockLogGroup" },
+            FilterPattern: "",
+            DestinationArn: { "Fn::GetAtt": ["BbgCwlForwarder", "Arn"] },
           },
         },
 
@@ -694,27 +720,27 @@ def handler(event, _ctx):
         // the home-account default bus must permit PutEvents from
         // this account (granted by EventBusPolicy in app-stage).
         BbgBedrockApiEventRole: {
-          Type: 'AWS::IAM::Role',
+          Type: "AWS::IAM::Role",
           Properties: {
             AssumeRolePolicyDocument: {
-              Version: '2012-10-17',
+              Version: "2012-10-17",
               Statement: [
                 {
-                  Effect: 'Allow',
-                  Principal: { Service: 'events.amazonaws.com' },
-                  Action: 'sts:AssumeRole',
+                  Effect: "Allow",
+                  Principal: { Service: "events.amazonaws.com" },
+                  Action: "sts:AssumeRole",
                 },
               ],
             },
             Policies: [
               {
-                PolicyName: 'PutEventsHome',
+                PolicyName: "PutEventsHome",
                 PolicyDocument: {
-                  Version: '2012-10-17',
+                  Version: "2012-10-17",
                   Statement: [
                     {
-                      Effect: 'Allow',
-                      Action: ['events:PutEvents'],
+                      Effect: "Allow",
+                      Action: ["events:PutEvents"],
                       Resource: `arn:aws:events:${homeRegion}:${homeAccountId}:event-bus/default`,
                     },
                   ],
@@ -725,29 +751,42 @@ def handler(event, _ctx):
         },
 
         BbgBedrockApiRule: {
-          Type: 'AWS::Events::Rule',
+          Type: "AWS::Events::Rule",
           Properties: {
-            Name: { 'Fn::Sub': 'bbg-bedrock-runtime-${AWS::Region}' },
+            Name: { "Fn::Sub": "bbg-bedrock-runtime-${AWS::Region}" },
             EventPattern: {
-              source: ['aws.bedrock-runtime', 'aws.bedrock', 'aws.bedrock-agent-runtime'],
-              'detail-type': ['AWS API Call via CloudTrail'],
+              source: [
+                "aws.bedrock-runtime",
+                "aws.bedrock",
+                "aws.bedrock-agent-runtime",
+              ],
+              "detail-type": ["AWS API Call via CloudTrail"],
               detail: {
                 eventName: [
-                  'InvokeModel',
-                  'InvokeModelWithResponseStream',
-                  'Converse',
-                  'ConverseStream',
-                  'InvokeAgent',
-                  'Retrieve',
-                  'RetrieveAndGenerate',
+                  "InvokeModel",
+                  "InvokeModelWithResponseStream",
+                  "Converse",
+                  "ConverseStream",
+                  // OpenAI-compatible APIs on the /openai/v1 paths of bedrock-runtime. Verified
+                  // 2026-08-18 against a live call: CloudTrail logs these as MANAGEMENT events
+                  // (eventName 'Responses', eventCategory 'Management', managementEvent true,
+                  // eventSource bedrock.amazonaws.com) carrying userIdentity + a requestID that
+                  // matches the invocation-log record. Without them the meter writes to
+                  // PendingMeter, the row TTLs out after 1h, and the spend is silently lost --
+                  // reproduced before this fix.
+                  "Responses",
+                  "ChatCompletions",
+                  "InvokeAgent",
+                  "Retrieve",
+                  "RetrieveAndGenerate",
                 ],
               },
             },
             Targets: [
               {
-                Id: 'home-bus',
+                Id: "home-bus",
                 Arn: `arn:aws:events:${homeRegion}:${homeAccountId}:event-bus/default`,
-                RoleArn: { 'Fn::GetAtt': ['BbgBedrockApiEventRole', 'Arn'] },
+                RoleArn: { "Fn::GetAtt": ["BbgBedrockApiEventRole", "Arn"] },
               },
             ],
           },
@@ -755,22 +794,22 @@ def handler(event, _ctx):
       },
       Outputs: {
         EnforcementRoleArn: {
-          Condition: 'IsHomeRegion',
-          Value: { 'Fn::GetAtt': ['BbgEnforcementRole', 'Arn'] },
+          Condition: "IsHomeRegion",
+          Value: { "Fn::GetAtt": ["BbgEnforcementRole", "Arn"] },
         },
         MeterReaderRoleArn: {
-          Condition: 'IsHomeRegion',
-          Value: { 'Fn::GetAtt': ['BbgMeterReaderRole', 'Arn'] },
+          Condition: "IsHomeRegion",
+          Value: { "Fn::GetAtt": ["BbgMeterReaderRole", "Arn"] },
         },
         ReadinessReaderRoleArn: {
-          Condition: 'IsHomeRegion',
-          Value: { 'Fn::GetAtt': ['BbgReadinessReaderRole', 'Arn'] },
+          Condition: "IsHomeRegion",
+          Value: { "Fn::GetAtt": ["BbgReadinessReaderRole", "Arn"] },
         },
         BedrockLogGroup: {
-          Value: { Ref: 'BbgBedrockLogGroup' },
+          Value: { Ref: "BbgBedrockLogGroup" },
         },
         CwlForwarderArn: {
-          Value: { 'Fn::GetAtt': ['BbgCwlForwarder', 'Arn'] },
+          Value: { "Fn::GetAtt": ["BbgCwlForwarder", "Arn"] },
         },
       },
     };
@@ -782,11 +821,11 @@ def handler(event, _ctx):
     // operators must one-time bootstrap AWSCloudFormationStackSetExecu
     // tionRole; see docs/multi-account-multi-region.md § 6.2.1.
     if (enrolledMemberAccounts.length > 0) {
-      new cloudformation.CfnStackSet(this, 'BbgMemberRoles', {
+      new cloudformation.CfnStackSet(this, "BbgMemberRoles", {
         stackSetName: `${stagePrefix}-bbg-member-roles`,
         description: `BBG (${stagePrefix}) cross-account roles + ingest for explicitly-enrolled member accounts.`,
-        permissionModel: 'SELF_MANAGED',
-        capabilities: ['CAPABILITY_NAMED_IAM'],
+        permissionModel: "SELF_MANAGED",
+        capabilities: ["CAPABILITY_NAMED_IAM"],
         templateBody: templateBodyJson,
         stackInstancesGroup: enrolledMemberAccounts.map((m) => ({
           regions: m.regions,
@@ -798,7 +837,7 @@ def handler(event, _ctx):
         },
       });
 
-      new cdk.CfnOutput(this, 'MemberStackSetName', {
+      new cdk.CfnOutput(this, "MemberStackSetName", {
         value: `${stagePrefix}-bbg-member-roles`,
       });
     }
@@ -816,15 +855,15 @@ def handler(event, _ctx):
     // Both must be enabled in the home account, which must be the Org
     // management account (or a registered delegated administrator).
     if (effectiveEnrolledOus.length > 0) {
-      new cloudformation.CfnStackSet(this, 'BbgMemberRolesOrg', {
+      new cloudformation.CfnStackSet(this, "BbgMemberRolesOrg", {
         stackSetName: `${stagePrefix}-bbg-member-roles-org`,
         description: `BBG (${stagePrefix}) cross-account roles + ingest, Org-wide auto-deploy by OU.`,
-        permissionModel: 'SERVICE_MANAGED',
+        permissionModel: "SERVICE_MANAGED",
         autoDeployment: {
           enabled: true,
           retainStacksOnAccountRemoval: false,
         },
-        capabilities: ['CAPABILITY_NAMED_IAM'],
+        capabilities: ["CAPABILITY_NAMED_IAM"],
         templateBody: templateBodyJson,
         stackInstancesGroup: effectiveEnrolledOus.map((o) => ({
           regions: o.regions,
@@ -836,7 +875,7 @@ def handler(event, _ctx):
         },
       });
 
-      new cdk.CfnOutput(this, 'MemberStackSetOrgName', {
+      new cdk.CfnOutput(this, "MemberStackSetOrgName", {
         value: `${stagePrefix}-bbg-member-roles-org`,
       });
     }
@@ -849,7 +888,8 @@ def handler(event, _ctx):
     // when missing). Without it we fall back to skipping this StackSet
     // and the in-Org accounts route to the SELF_MANAGED path (which
     // requires the bootstrap CFN, but at least doesn't fail synth).
-    const orgRootId = this.node.tryGetContext('bbg:organizationRootId') as string | undefined;
+    const orgRootId = this.node.tryGetContext("bbg:organizationRootId") as
+      string | undefined;
     if (effectiveEnrolledOrgAccounts.length > 0 && orgRootId) {
       // Group by region to fold {acct1: [r1,r2], acct2: [r1]} into the
       // CFN StackInstancesGroup shape (one entry per distinct region
@@ -857,15 +897,15 @@ def handler(event, _ctx):
       // so this collapses to a single group.
       const groupsByRegions = new Map<string, string[]>();
       for (const a of effectiveEnrolledOrgAccounts) {
-        const key = [...a.regions].sort().join(',');
+        const key = [...a.regions].sort().join(",");
         const list = groupsByRegions.get(key) ?? [];
         list.push(a.accountId);
         groupsByRegions.set(key, list);
       }
-      new cloudformation.CfnStackSet(this, 'BbgMemberRolesOrgAccounts', {
+      new cloudformation.CfnStackSet(this, "BbgMemberRolesOrgAccounts", {
         stackSetName: `${stagePrefix}-bbg-member-roles-org-accounts`,
         description: `BBG (${stagePrefix}) cross-account roles + ingest, in-Org account-list (no bootstrap CFN).`,
-        permissionModel: 'SERVICE_MANAGED',
+        permissionModel: "SERVICE_MANAGED",
         // CFN requires autoDeployment on every SERVICE_MANAGED StackSet
         // (even with accountFilterType=INTERSECTION). Disable the
         // auto-deploy behavior since the operator chose specific
@@ -874,15 +914,15 @@ def handler(event, _ctx):
         autoDeployment: {
           enabled: false,
         },
-        capabilities: ['CAPABILITY_NAMED_IAM'],
+        capabilities: ["CAPABILITY_NAMED_IAM"],
         templateBody: templateBodyJson,
         stackInstancesGroup: [...groupsByRegions.entries()].map(
           ([regionKey, accountIds]) => ({
-            regions: regionKey.split(','),
+            regions: regionKey.split(","),
             deploymentTargets: {
               organizationalUnitIds: [orgRootId],
               accounts: accountIds,
-              accountFilterType: 'INTERSECTION',
+              accountFilterType: "INTERSECTION",
             },
           }),
         ),
@@ -892,13 +932,13 @@ def handler(event, _ctx):
         },
       });
 
-      new cdk.CfnOutput(this, 'MemberStackSetOrgAccountsName', {
+      new cdk.CfnOutput(this, "MemberStackSetOrgAccountsName", {
         value: `${stagePrefix}-bbg-member-roles-org-accounts`,
       });
     } else if (effectiveEnrolledOrgAccounts.length > 0 && !orgRootId) {
       cdk.Annotations.of(this).addWarning(
         `${effectiveEnrolledOrgAccounts.length} in-Org account(s) enrolled but bbg:organizationRootId is not set; ` +
-          'falling back to SELF_MANAGED (per-member bootstrap CFN required).',
+          "falling back to SELF_MANAGED (per-member bootstrap CFN required).",
       );
     }
 
@@ -909,16 +949,19 @@ def handler(event, _ctx):
     // within ~10 min. Pattern matches AWS Config / Security Hub
     // aggregator deployments.
     if (enrolledWholeOrg && orgRootId) {
-      const excluded = new Set<string>([homeAccountId, ...(enrolledWholeOrg.excludeAccountIds ?? [])]);
-      new cloudformation.CfnStackSet(this, 'BbgMemberRolesWholeOrg', {
+      const excluded = new Set<string>([
+        homeAccountId,
+        ...(enrolledWholeOrg.excludeAccountIds ?? []),
+      ]);
+      new cloudformation.CfnStackSet(this, "BbgMemberRolesWholeOrg", {
         stackSetName: `${stagePrefix}-bbg-member-roles-whole-org`,
         description: `BBG (${stagePrefix}) cross-account roles + ingest, whole-org auto-deploy.`,
-        permissionModel: 'SERVICE_MANAGED',
+        permissionModel: "SERVICE_MANAGED",
         autoDeployment: {
           enabled: true,
           retainStacksOnAccountRemoval: false,
         },
-        capabilities: ['CAPABILITY_NAMED_IAM'],
+        capabilities: ["CAPABILITY_NAMED_IAM"],
         templateBody: templateBodyJson,
         stackInstancesGroup: [
           {
@@ -926,7 +969,7 @@ def handler(event, _ctx):
             deploymentTargets: {
               organizationalUnitIds: [orgRootId],
               accounts: [...excluded],
-              accountFilterType: 'DIFFERENCE',
+              accountFilterType: "DIFFERENCE",
             },
           },
         ],
@@ -936,13 +979,13 @@ def handler(event, _ctx):
         },
       });
 
-      new cdk.CfnOutput(this, 'MemberStackSetWholeOrgName', {
+      new cdk.CfnOutput(this, "MemberStackSetWholeOrgName", {
         value: `${stagePrefix}-bbg-member-roles-whole-org`,
       });
     } else if (enrolledWholeOrg && !orgRootId) {
       cdk.Annotations.of(this).addWarning(
-        'enrolledWholeOrg is set but bbg:organizationRootId is not (caller likely lacks ' +
-          'organizations:ListRoots). Whole-org StackSet not deployed.',
+        "enrolledWholeOrg is set but bbg:organizationRootId is not (caller likely lacks " +
+          "organizations:ListRoots). Whole-org StackSet not deployed.",
       );
     }
   }

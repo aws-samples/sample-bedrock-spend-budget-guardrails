@@ -17,7 +17,7 @@ It demonstrates a full pattern end to end: metering across every pricing dimensi
 ## ✨ Features
 
 - ⚡ **Sub-30-second enforcement** — `InvokeModel` to `bbg-deny-*` policy attached, p95.
-- 🎯 **Scope: Bedrock Runtime** — meters and enforces the `bedrock-runtime` / `bedrock-agent-runtime` API surface. Traffic on Bedrock's **Mantle** endpoint (the OpenAI-compatible Responses API) is **not** covered — see [API-surface coverage](#api-surface-coverage--bedrock-runtime-only-not-mantle).
+- 🎯 **Scope: the `bedrock-runtime` endpoint** — meters and enforces everything called on `bedrock-runtime` / `bedrock-agent-runtime`, **including the OpenAI-compatible Responses and Chat Completions APIs** on its `/openai/v1` paths. Coverage depends on the **endpoint**, not the model: the same model is covered on `bedrock-runtime` and not covered on `bedrock-mantle` — see [API-surface coverage](#api-surface-coverage--which-endpoint-you-call).
 - 💰 **Multi-dimensional pricing** — meters tokens (input / output / cache read / cache write / embed), images, video seconds, audio seconds, and search units. Each model bills on whichever dimensions it actually charges for; budgets cap aggregate USD across all of them.
 - 🏷️ **Hierarchical custom pricing discounts** — meter at your negotiated rate, not list price. Author a discount % at **account**, **OU**, or **org** scope; most-specific wins (account > nearest OU, deepest-first > org root > org-wide), single winner, no stacking. An hourly + on-write `org-discount-resolver` walks AWS Organizations and materializes the winning **effective rate** onto each account's row, so the meter's hot path stays one cached read. An account set to **0%** is an explicit list-price exclusion that overrides any discount it would otherwise inherit.
 - 🛡️ **Per-principal IAM denies** — works for IAM users, IAM roles, SSO `AWSReservedSSO_*`, and Bedrock Agents (single + multi-agent). Per-human denies under a shared federation/SSO role attach to the issuer role scoped to the one identity (`aws:userid` / `aws:SourceIdentity`). Callers BBG can't attribute to an identity (`principal#unknown`, GetFederationToken users) are alert-only and surfaced via the `EnforcementUnattachable` alarm. No SDK shims; the gateway is optional (only needed for session-tag-keyed budgets).
@@ -138,25 +138,74 @@ When a budget is breached, the `bbg-deny-*` policy denies every billable Bedrock
 
 Cache-read and cache-write tokens are metered as separate dimensions (`cacheReadPer1k` and `cacheWritePer1k` in the pricing table) and contribute to `spendUsd` independently — Anthropic's published cache-write/cache-read ratio (~12.5× at the 5-min cache tier) is preserved end-to-end and covered by [`lambda/test/meter-cache.test.ts`](lambda/test/meter-cache.test.ts).
 
-### API-surface coverage — Bedrock **Runtime** only (not Mantle)
+### API-surface coverage — which endpoint you call
 
-> **Scope limitation.** This sample meters and enforces on the **Bedrock Runtime** API surface only. Traffic sent to Bedrock's newer **Mantle** endpoint (`bedrock-mantle.<region>.api.aws`, the OpenAI-compatible Responses API surface) is **not metered and not enforced** today.
+> **Scope limitation.** Coverage follows the **endpoint**, not the model. Everything
+> called on **`bedrock-runtime`** is metered and enforced. Traffic sent to Bedrock's
+> **`bedrock-mantle`** endpoint (`bedrock-mantle.<region>.api.aws`) is **neither
+> metered nor enforced** — the same model can be covered or uncovered depending on
+> which endpoint you call.
 
 | Surface | Metered & enforced? | Notes |
 |---|---|---|
-| `bedrock-runtime` — `InvokeModel`, `InvokeModelWithResponseStream`, `Converse`, `ConverseStream` | ✅ Yes | The primary path. Includes cross-region inference profiles. |
+| `bedrock-runtime` — `InvokeModel`, `InvokeModelWithResponseStream`, `Converse`, `ConverseStream` | ✅ Yes | The primary path. Includes cross-Region inference profiles. |
+| `bedrock-runtime` `/openai/v1` — `Responses`, `ChatCompletions` | ✅ Yes | OpenAI-compatible APIs. Require a `us.` / `global.` cross-Region profile; in-Region inference isn't offered for these models here. |
 | `bedrock-agent-runtime` — `InvokeAgent`, `Retrieve`, `RetrieveAndGenerate` | ✅ Yes | |
 | `bedrock` — `ApplyGuardrail`, `InvokeFlow`, `InvokeInlineAgent` | ✅ Yes | |
-| **`bedrock-mantle`** — `CreateInference` (Responses API) | ❌ **No** | Out of scope for this sample — see below. |
+| **`bedrock-mantle`** — `CreateInference` (Responses / Chat Completions / Messages) | ❌ **No** | Not metered **and not enforceable** — see below. |
 
-Why: BBG joins spend to an IAM principal from **management-event** API calls that Bedrock Runtime publishes to the default EventBridge bus, matched by the `<stage>-bbg-bedrock-runtime-<region>` rule on `source: ["aws.bedrock-runtime", "aws.bedrock", "aws.bedrock-agent-runtime"]` ([`infra/lib/metering-stack.ts`](infra/lib/metering-stack.ts)). Mantle is a distinct API surface: it has its own CloudTrail `eventSource` (`bedrock-mantle.amazonaws.com`) and logs inference as `CreateInference`, which is a **data event** (off by default, billed separately) rather than a management event. Direct Mantle calls also bypass Bedrock's model-invocation logging, so the token counts BBG prices against never reach the log group the meter reads. Covering Mantle therefore needs more than widening the event filter — it needs a data-event trail plus a different usage-extraction path, so it is deliberately left out of this sample.
+Why: BBG joins spend to an IAM principal from **management-event** API calls that
+Bedrock publishes to the default EventBridge bus, matched by the
+`<stage>-bbg-bedrock-runtime-<region>` rule
+([`infra/lib/metering-stack.ts`](infra/lib/metering-stack.ts)), and it reads token
+counts from **Bedrock model invocation logging**.
 
-Practical impact on model choice:
+Both of those are properties of the **endpoint**, not the model:
 
-- **Open-weight OpenAI models** (`openai.gpt-oss-*`, including the safeguard variants) are served over the standard Runtime path — fully metered, priced, and enforced.
-- **Proprietary OpenAI frontier models** (GPT-5.x) are served on Mantle, so their spend is **invisible to this sample**. They are also absent from the AWS Price List API/bulk offer files that the pricing refresher reads, so they carry no priced row either (see [`docs/pricing-nuances.md`](docs/pricing-nuances.md)).
+- On **`bedrock-runtime`**, inference is a **management event** (`eventSource:
+  bedrock.amazonaws.com`), and invocation logging covers it — *including* the
+  OpenAI-compatible Responses and Chat Completions APIs served on the
+  `/openai/v1` paths. Those records also carry the caller's IAM principal
+  directly in `identity.arn`, which BBG uses as a fallback when the CloudTrail
+  join misses.
+- On **`bedrock-mantle`**, inference is a **data event** (`eventSource:
+  bedrock-mantle.amazonaws.com`, `CreateInference`) which is off by default and
+  billed separately, **and Mantle calls are not captured by invocation logging at
+  all**. So neither half of the join is available.
 
-If your account uses Mantle-served models, treat this sample's totals as covering the Runtime surface only, and use AWS Cost Explorer or CUR for whole-account Bedrock spend.
+**Mantle is also an enforcement bypass, not just a metering blind spot.** Mantle
+inference authorizes `bedrock-mantle:CreateInference` — a different IAM service
+prefix that the `bbg-deny-*` policy's `bedrock:*` actions cannot match. A
+principal denied by BBG can still call Mantle.
+
+Practical impact:
+
+- **Anything you call on `bedrock-runtime` is covered** — Bedrock-native
+  `InvokeModel`/`Converse`, and the OpenAI-compatible `Responses` /
+  `ChatCompletions` APIs. Note these OpenAI models require a cross-Region
+  inference profile (`us.` or `global.`) on this endpoint; in-Region inference
+  isn't offered for them, and BBG resolves either profile to the underlying model
+  for pricing.
+- **Anything you call on `bedrock-mantle` is not covered** — same model, same
+  account, different endpoint.
+- **Some models are `bedrock-mantle`-only** and therefore cannot be metered by
+  this sample at all, regardless of configuration. As of 2026-08 that includes
+  **xAI Grok 4.3**, **GPT-5.5**, **GPT-5.4**, and the **Claude Mythos** family.
+  Check [Endpoint availability by
+  models](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html)
+  for the current matrix.
+- **Mantle remains the required endpoint** for server-side/pre-configured tool
+  use (including web search), asynchronous inference (`background=true`), and
+  non-default Projects/Workspaces. Traffic that needs those features is
+  structurally outside this sample's reach.
+- **Some models carry no priced row.** GPT-5.6 has no SKU in the AWS Price List
+  yet, so it needs a manual pricing override (see
+  [`docs/pricing-nuances.md`](docs/pricing-nuances.md)). Metering and enforcement
+  still work; only the rate is hand-maintained.
+
+If your account uses Mantle, treat this sample's totals as covering the
+`bedrock-runtime` surface only, and use AWS Cost Explorer or CUR for
+whole-account Bedrock spend.
 
 ## 🛠️ Setup
 

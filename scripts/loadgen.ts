@@ -6,7 +6,7 @@
  * with credentials for the deploy account first, then run this.
  *
  * Usage:
- *   npm run loadgen -- --model anthropic.claude-haiku-4-5 --rps 5 --duration 60s
+ *   npm run loadgen -- --model us.anthropic.claude-haiku-4-5-20251001-v1:0 --rps 5 --duration 60s
  *   npm run loadgen -- --model us.anthropic.claude-sonnet-4-6 --duration 2m
  */
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
@@ -22,7 +22,7 @@ const parseArgs = (): {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : def;
   };
-  const model = get('--model', 'anthropic.claude-haiku-4-5')!;
+  const model = get('--model', 'us.anthropic.claude-haiku-4-5-20251001-v1:0')!;
   const rps = Number(get('--rps', '1'));
   const dur = get('--duration', '30s')!;
   const region = get('--region', process.env.AWS_REGION ?? 'us-west-2')!;

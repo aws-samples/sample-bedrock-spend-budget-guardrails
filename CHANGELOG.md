@@ -8,6 +8,11 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-20
+
+### Fixed
+- **The README never documented the pre-deployment readiness audit.** The capability has shipped since `v1.0.0` — `lambda/python/readiness/` plus the web app's **Readiness** page (one-click account or Org-wide audit: Bedrock-capable principals, CloudTrail activity, tag coverage, 90-day spend → an explainable GREEN / YELLOW / RED Tier-1 verdict with HTML/CSV reports and a generated `setup-tier1.sh`) — but had no feature bullet, no page-list entry, and no UI-tour mention, so it was effectively invisible to anyone browsing the repo. The README now carries all three. Docs only; no behaviour change.
+
 ## [1.3.0] - 2026-08-20
 
 ### Fixed
@@ -78,7 +83,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.1
 [1.3.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.2.0
 [1.1.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.1

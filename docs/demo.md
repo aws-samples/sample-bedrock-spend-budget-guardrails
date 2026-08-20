@@ -32,7 +32,7 @@ Optional: add a passkey on the Profile page for password-free future sign-ins.
 Budgets → Create budget. Pick a real principal you've seen in the **Identities** list (any IAM role/user that has called Bedrock recently appears there). For example:
 
 - Principal: the IAM ARN of the role you'll be invoking Bedrock under (your identity provider role's ARN, an EC2 instance profile role, a Lambda execution role, etc.)
-- Target: `anthropic.claude-sonnet-4-6` (will be prefixed `model#` automatically)
+- Target: `anthropic.claude-sonnet-4-6` (will be prefixed `model#` automatically; use the exact model id the meter records — the Spend dashboard / Identities pages show it. Some models record a versioned id, e.g. `anthropic.claude-haiku-4-5-20251001-v1:0`)
 - Limit: `0.10`
 - Action: `Deny (block invocations)`
 

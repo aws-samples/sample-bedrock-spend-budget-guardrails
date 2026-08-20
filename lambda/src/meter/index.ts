@@ -1,7 +1,7 @@
 import { gunzipSync } from 'node:zlib';
 import { DeleteCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { CloudWatchLogsEvent, Context, EventBridgeEvent } from 'aws-lambda';
-import { canonicalizeCurPrincipal, stripCrisPrefix } from '../shared/arn.js';
+import { canonicalizeCurPrincipal, routingModeOf, stripCrisPrefix } from '../shared/arn.js';
 import { accountFromPrincipal } from '../shared/iam-cross-account.js';
 import { ddb, oneHourFromNowEpoch } from '../shared/ddb.js';
 import {
@@ -309,6 +309,7 @@ const upsertSpend = async (
   target: string,
   payload: MeterPayload,
   pricing: PricingRow | undefined,
+  routing?: string,
   lens?: IdentityLens,
 ): Promise<void> => {
   // apply the org's per-account custom pricing discount (if any).
@@ -321,6 +322,7 @@ const upsertSpend = async (
     payload.region,
     payload.usage,
     discountPct,
+    routing,
   );
   // Budget window/meta is resolved against the ROW's principal — a lens row's
   // budget is keyed by the lens principal. For the primary row that's the
@@ -734,15 +736,26 @@ const commitJoinedSpend = async (
 ): Promise<void> => {
   const { principal } = identity;
   const baseModelId = stripCrisPrefix(payload.modelId);
+  // Routing mode (e.g. `global`) is extracted BEFORE the prefix is stripped:
+  // Global-routed traffic bills at AWS's distinct Global SKU rate, so the
+  // mode must reach computeCost even though the spend TARGET stays keyed by
+  // the bare model id (budgets are per-model regardless of routing).
+  const routing = routingModeOf(payload.modelId);
   const pricing = await lookupPricing(baseModelId);
   const modelTarget = `model#${baseModelId}`;
 
   // Primary role-keyed rows (unchanged): a per-model row (always) and a
   // per-profile row (when an inference profile was used) so admins can
   // budget either dimension.
-  await upsertSpend(principal, modelTarget, payload, pricing);
+  await upsertSpend(principal, modelTarget, payload, pricing, routing);
   if (payload.inferenceProfileArn) {
-    await upsertSpend(principal, `profile#${payload.inferenceProfileArn}`, payload, pricing);
+    await upsertSpend(
+      principal,
+      `profile#${payload.inferenceProfileArn}`,
+      payload,
+      pricing,
+      routing,
+    );
   }
 
   // Identity-lens rows (model target only): the per-identity view of the
@@ -751,7 +764,7 @@ const commitJoinedSpend = async (
   // No profile lens row — budgeting an identity on a specific inference
   // profile isn't a use case.
   for (const lens of identityLensRows(identity)) {
-    await upsertSpend(principal, modelTarget, payload, pricing, lens);
+    await upsertSpend(principal, modelTarget, payload, pricing, routing, lens);
   }
 };
 

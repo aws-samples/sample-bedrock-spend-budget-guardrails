@@ -7,10 +7,12 @@ The real-time meter is BBG's primary signal for stopping cost overruns. **CUR 2.
 1. Enable CUR 2.0 in the management account console with the **Include caller identity (IAM principal) allocation data** option.
 2. Activate the `iamPrincipal/*` cost-allocation tags in Billing → Cost Allocation Tags.
 3. The `cur-reconciler` Lambda runs daily at 06:00 UTC. It:
-   - Queries the latest CUR 2.0 partition via Athena: `SELECT line_item_iam_principal, line_item_usage_type, sum(line_item_unblended_cost) GROUP BY 1, 2`.
-   - Compares per-principal × per-usage-type aggregates to the meter's `RunningSpend` totals for the same window.
-   - Emits a `bbg.ReconciliationDelta` CloudWatch metric per `(principal, usage type)` pair.
-4. Alarm `bbg-reconciliation-delta` fires when delta > $1 OR delta > 5% sustained for 3 consecutive days.
+   - Computes a **reconciliation watermark** of `now − 72h` (override: `RECONCILE_WATERMARK_HOURS`). CUR line items land 8–24h after the usage they bill — and Marketplace-billed model SKUs (the entire Anthropic Claude lineup) were observed settling later than 48h — while the meter records an invocation within seconds; comparing a real-time total against a lagging one guarantees a phantom "drift" equal to the last day-or-two of spend for any active principal. Windowing **both** sides to end at the watermark means every row in the comparison is bill-complete, so a non-zero delta is a real discrepancy, not ingestion latency.
+   - Queries the CUR 2.0 export via Athena for per-principal Bedrock spend with `line_item_usage_start_date < watermark`.
+   - Queries the **S3/Athena invocation ledger** (`<stage>_bbg_ledger.invocations`, written by `ledger-writer` off the RunningSpend stream) for per-principal metered spend with `recordedat < watermark`, summing **`model#` targets only** — the meter writes the same dollars to a `profile#` row alongside every `model#` row when an inference profile was used (so admins can budget either dimension), and identity-lens rows are already excluded at write time; counting either duplicate class would inflate the meter side. The ledger — not the RunningSpend DynamoDB table — is the meter side of the comparison: RunningSpend only holds month-running cumulative totals, which cannot be windowed to the watermark.
+   - Splits the population: principals the meter knows get a `bbg.ReconciliationDelta` metric (`stage=<stage>` dimension) — any delta here means the meter and the bill disagree about spend the meter **did** see. CUR-only principals (pre-deployment history, another stage's traffic, structural bypasses like `bedrock-mantle`) roll up into `bbg.ReconciliationUnmeteredSpend` instead — real signal, but not fixable by fixing the meter, so it must not feed the drift alarm.
+   - Logs the top-20 per-principal breakdown of both populations (meter vs CUR vs delta) every run.
+4. Alarm `<stage>-bbg-reconciliation-delta` fires when the stage's own `ReconciliationDelta` is > $1 for 3 consecutive days. The `stage` metric dimension keeps dev's and prod's reconcilers on separate series — without it, a barely-metering dev install comparing itself against the whole account's CUR holds the prod alarm red. The alarm itself is additionally **stage-gated** by `bbg:reconciliationAlarmStages` (default `["prod"]`): in a shared-account dev+prod install only one stage owns the invocation-log subscription, so only that stage's reconciliation is meaningful. The metric publishes on every stage regardless; single-stage forks deploying only dev should set `["dev"]`.
 
 ## What it catches
 
@@ -62,7 +64,7 @@ CUR's `line_item_iam_principal` records the assumed-role session form for any ro
 arn:aws:sts::ACCT:assumed-role/<RoleName>/<Session>
 ```
 
-BBG's RunningSpend keys the same caller by the canonical role ARN:
+BBG's meter (and therefore the ledger the reconciler reads) keys the same caller by the canonical role ARN:
 
 ```
 arn:aws:iam::ACCT:role/<RoleName>
@@ -74,7 +76,7 @@ SSO assumed-role sessions get a best-effort match: CUR's principal lacks the `aw
 
 ### Pre-deployment history
 
-CUR reflects the entire calendar month including spend from before BBG was deployed in the account. Those rows have no matching meter entries and surface as legitimate-looking "drift" in the first reconciliation runs. The deltas roll off naturally on the first of the next month when the period changes. Operators investigating a large delta should first run an Athena query like:
+CUR reflects the entire calendar month including spend from before BBG was deployed in the account. Those rows have no matching meter entries — the reconciler classifies them as **unmetered** and rolls them into `bbg.ReconciliationUnmeteredSpend` (dashboard-only) rather than the alarmed `ReconciliationDelta`, so they cannot false-page. They roll off naturally on the first of the next month when the period changes. The reconciler's "CUR spend with no meter counterpart" log line lists the top-20 unmetered principals per run; to break one down by day, run an Athena query like:
 
 ```sql
 SELECT date_trunc('day', line_item_usage_start_date) AS day,
@@ -89,14 +91,12 @@ If most of the spend is on days before BBG's first deploy, that's expected — n
 
 ### What day 1 looks like
 
-On a fresh install the first reconciler run typically emits one `bbg.ReconciliationDelta`
-data point per (principal × usage-type) pair, and the largest is usually a **pre-deployment
-artifact** rather than a real drift: the CUR export carries usage from before BBG was
-deployed, so spend BBG never metered shows up as a delta on an admin role's high-token
-models. It matches the "Pre-deployment history" pattern above and rolls off at the next
-period boundary.
+On a fresh install the first reconciler run typically shows a large
+`bbg.ReconciliationUnmeteredSpend` value — the CUR export carries usage from before BBG
+was deployed, so spend BBG never metered lands in the unmetered rollup (see
+"Pre-deployment history" above) and rolls off at the next period boundary. The alarmed
+`ReconciliationDelta` series only covers principals the meter has actually seen, so it
+starts near zero.
 
-Expect the most recent day or two to be empty in that first run — CUR export latency is
-8–24 hours. Start measuring the real delta from the *second* daily run onward.
-
-The `bbg-reconciliation-delta` alarm is configured to fire on **3 consecutive days** of breach, so the day-1 pre-deploy spike won't false-page provided no further breach occurs on 2026-05-20 / 2026-05-21.
+Expect the most recent ~72h to be excluded from every run — that's the reconciliation
+watermark doing its job, not missing data.

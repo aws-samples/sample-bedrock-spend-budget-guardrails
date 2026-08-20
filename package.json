@@ -1,6 +1,6 @@
 {
   "name": "sample-bedrock-spend-budget-guardrails",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Near real-time per-IAM-principal × per-model Bedrock spend metering and budget enforcement.",
   "license": "MIT-0",

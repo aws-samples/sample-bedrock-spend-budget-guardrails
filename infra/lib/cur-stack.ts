@@ -107,16 +107,22 @@ export class CurStack extends cdk.Stack {
       memorySize: 1024,
       environment: {
         STAGE_PREFIX: stagePrefix,
-        RUNNING_SPEND_TABLE: data.runningSpend.tableName,
         ATHENA_WORKGROUP: data.athenaWorkGroup.name,
         ATHENA_RESULTS_BUCKET: data.athenaResultsBucket.bucketName,
         // Database created by this stack; table populated by the daily crawler.
         CUR_DATABASE: curDb.ref,
         CUR_TABLE: curTable,
+        // Meter side of the reconciliation: the S3/Athena ledger (per-event
+        // spend deltas with a recordedat timestamp). RunningSpend's
+        // month-running totals can't be windowed to the reconciliation
+        // watermark, so the reconciler no longer reads them.
+        LEDGER_DATABASE: data.glueDatabase.ref,
+        LEDGER_TABLE: data.glueLedgerTable.ref,
       },
     });
 
-    data.runningSpend.grantReadData(this.reconciler);
+    // Athena reads the ledger JSONL with the caller's (reconciler's) creds.
+    data.ledgerBucket.grantRead(this.reconciler);
     data.athenaResultsBucket.grantReadWrite(this.reconciler);
     data.key.grantEncryptDecrypt(this.reconciler);
 

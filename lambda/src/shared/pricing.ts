@@ -51,6 +51,18 @@ export interface PricingRow {
   dimensions?: Partial<Record<DimensionKind, Dimension>>;
   /** Per-region overrides; missing keys fall back to top-level `dimensions`. */
   regionDimensions?: Record<string, Partial<Record<DimensionKind, Dimension>>>;
+  /**
+   * Per-ROUTING-MODE overrides (`global`, keyed by `routingModeOf`'s output).
+   * Highest precedence: an invocation routed via a `global.` inference
+   * profile is billed at AWS's distinct Global SKU rate, which for several
+   * lineups (Anthropic frontier ~9% below regional, OpenAI GPT-5.6 below
+   * regional) differs from the regional rate — so when the meter passes a
+   * routing mode and the row has an entry for it, those dimensions win over
+   * regionDimensions/dimensions. Missing kinds fall back per-dimension.
+   * Populated by the refresher from `*_Global` / `*-global-standard` SKUs,
+   * or authored on manual override rows.
+   */
+  routingDimensions?: Record<string, Partial<Record<DimensionKind, Dimension>>>;
 
   // ---- Legacy fields (still populated for backward compatibility) ----
   /** $/1K input tokens. Equivalent to `dimensions.inputTokens`. */
@@ -98,11 +110,15 @@ const isTokenDimension = (kind: DimensionKind): boolean => TOKEN_DIMENSIONS.incl
 /**
  * Returns the merged dimension map for a row, considering the regional
  * override and synthesizing legacy `inputPer1k`/`outputPer1k`/cache-* fields
- * if no `dimensions` map is set.
+ * if no `dimensions` map is set. When `routing` is provided and the row has
+ * `routingDimensions[routing]`, those dimensions are layered LAST (highest
+ * precedence) — a Global-routed invocation is billed at the Global SKU rate,
+ * not the source region's regional rate.
  */
 export const dimensionsOf = (
   row: PricingRow | undefined,
   region: string,
+  routing?: string,
 ): Partial<Record<DimensionKind, Dimension>> => {
   if (!row) return {};
 
@@ -110,6 +126,10 @@ export const dimensionsOf = (
   const merged: Partial<Record<DimensionKind, Dimension>> = { ...(row.dimensions ?? {}) };
   const regionalDims = row.regionDimensions?.[region];
   if (regionalDims) Object.assign(merged, regionalDims);
+  // Routing mode wins over region: the routing SKU already IS the billed
+  // rate for this traffic regardless of which region sourced it.
+  const routingDims = routing ? row.routingDimensions?.[routing] : undefined;
+  if (routingDims) Object.assign(merged, routingDims);
 
   // Synthesize from legacy token fields for rows that haven't been migrated.
   const regional = row.regionRates?.[region];
@@ -183,8 +203,15 @@ export const computeCost = (
    * Out-of-range values are clamped to [0, 100]; undefined/0 = list price.
    */
   discountPct?: number,
+  /**
+   * Inference routing mode extracted from the invocation's model id
+   * (`routingModeOf`): `'global'` for `global.`-profile traffic. Selects
+   * `routingDimensions[routing]` rates when the row carries them; undefined
+   * or an unlisted mode falls back to regional/default dimensions.
+   */
+  routing?: string,
 ): CostBreakdown => {
-  const dims = dimensionsOf(pricing, region);
+  const dims = dimensionsOf(pricing, region, routing);
   // Clamp defensively — the config write-path validates 0–100, but a bad
   // stored value must never produce a negative or >list charge.
   const factor =

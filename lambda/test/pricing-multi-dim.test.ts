@@ -2,6 +2,72 @@ import { describe, expect, it } from 'vitest';
 import { computeCost, dimensionsOf, type PricingRow } from '../src/shared/pricing.js';
 
 describe('multi-dim pricing', () => {
+  describe('routing-mode dimensions (global inference profiles)', () => {
+    // Rates verified against CUR 2026-08-20: Anthropic Claude Opus 5 bills
+    // `*-global-standard` usage ~9% below the regional rate.
+    const opus5: PricingRow = {
+      dimensions: {
+        inputTokens: { unit: '1K tokens', pricePerUnit: 0.0055 },
+        outputTokens: { unit: '1K tokens', pricePerUnit: 0.0275 },
+        cacheReadTokens: { unit: '1K tokens', pricePerUnit: 0.00055 },
+      },
+      routingDimensions: {
+        global: {
+          inputTokens: { unit: '1K tokens', pricePerUnit: 0.005 },
+          outputTokens: { unit: '1K tokens', pricePerUnit: 0.025 },
+          // no cacheReadTokens entry → falls back per-dimension
+        },
+      },
+    };
+
+    it('routing=global selects the Global rate over the regional rate', () => {
+      const dims = dimensionsOf(opus5, 'us-west-2', 'global');
+      expect(dims.inputTokens?.pricePerUnit).toBe(0.005);
+      expect(dims.outputTokens?.pricePerUnit).toBe(0.025);
+    });
+
+    it('missing routing kinds fall back to the regional/default dimension', () => {
+      const dims = dimensionsOf(opus5, 'us-west-2', 'global');
+      expect(dims.cacheReadTokens?.pricePerUnit).toBe(0.00055);
+    });
+
+    it('no routing arg (bare or us./eu. CRIS ids) keeps the regional rate', () => {
+      expect(dimensionsOf(opus5, 'us-west-2').inputTokens?.pricePerUnit).toBe(0.0055);
+      expect(dimensionsOf(opus5, 'us-west-2', 'us').inputTokens?.pricePerUnit).toBe(0.0055);
+    });
+
+    it('routingDimensions win over regionDimensions', () => {
+      const row: PricingRow = {
+        ...opus5,
+        regionDimensions: {
+          'us-west-2': { inputTokens: { unit: '1K tokens', pricePerUnit: 0.006 } },
+        },
+      };
+      expect(dimensionsOf(row, 'us-west-2', 'global').inputTokens?.pricePerUnit).toBe(0.005);
+      // and without routing, the regional override still wins over top-level
+      expect(dimensionsOf(row, 'us-west-2').inputTokens?.pricePerUnit).toBe(0.006);
+    });
+
+    it('computeCost bills global-routed usage at the Global rate', () => {
+      const global = computeCost(
+        opus5,
+        'us-west-2',
+        { inputTokens: 1000, outputTokens: 1000 },
+        undefined,
+        'global',
+      );
+      expect(global.spendUsd).toBeCloseTo(0.005 + 0.025, 6);
+      const regional = computeCost(opus5, 'us-west-2', { inputTokens: 1000, outputTokens: 1000 });
+      expect(regional.spendUsd).toBeCloseTo(0.0055 + 0.0275, 6);
+    });
+
+    it('a row without routingDimensions ignores the routing arg entirely', () => {
+      const bare: PricingRow = { inputPer1k: 0.003, outputPer1k: 0.015 };
+      const r = computeCost(bare, 'us-east-1', { inputTokens: 1000 }, undefined, 'global');
+      expect(r.spendUsd).toBeCloseTo(0.003, 6);
+    });
+  });
+
   describe('dimensionsOf', () => {
     it('synthesizes dimensions from legacy inputPer1k/outputPer1k', () => {
       const row: PricingRow = { inputPer1k: 0.003, outputPer1k: 0.015 };

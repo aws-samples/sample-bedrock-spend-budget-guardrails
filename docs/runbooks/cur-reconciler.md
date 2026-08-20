@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Daily Athena query that computes per-IAM-principal Bedrock spend from the CUR 2.0 IAM-principal export and compares it against the meter's `RunningSpend` totals for the same period. Differences are emitted as `ReconciliationDelta` (overall) and `ReconciliationDeltaUsd` (per-principal) CloudWatch metrics, gated by alarm `dev-bbg-reconciliation-delta` (`> $1` threshold). Triggered by EventBridge Scheduler at `cron(0 6 * * ? *)` UTC, four hours after the daily Glue crawler at `cron(0 2 * * ? *)` keeps the CUR table schema in sync.
+Daily Athena run that computes per-IAM-principal Bedrock spend from the CUR 2.0 IAM-principal export and compares it against the meter's **invocation ledger** (`<stage>_bbg_ledger.invocations`, `model#` targets only — `profile#` rows duplicate the same dollars), with **both sides watermarked to bill-complete days** (`now − 72h`, override `RECONCILE_WATERMARK_HOURS`) so CUR ingestion lag cannot register as drift. Differences are emitted as `ReconciliationDelta` (per-stage: `service=bbg, stage=<stage>`) and `ReconciliationDeltaUsd` (per-principal) CloudWatch metrics; CUR-only spend the stage never metered rolls into `ReconciliationUnmeteredSpend` instead. The alarm (`<stage>-bbg-reconciliation-delta`, `> $1`, 3 days) exists only on stages listed in `bbg:reconciliationAlarmStages` (default `["prod"]`). Triggered by EventBridge Scheduler at `cron(0 6 * * ? *)` UTC, four hours after the daily Glue crawler at `cron(0 2 * * ? *)` keeps the CUR table schema in sync.
 
 ## Symptoms
 

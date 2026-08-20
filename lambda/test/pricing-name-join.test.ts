@@ -103,6 +103,63 @@ describe('classifyNonTokenUsage — embeddings/rerank non-token shapes', () => {
 describe('SKU selection is order-independent (claim precedence + cheapest tiebreak)', () => {
   const { recordTokenPrice } = __test;
 
+  it('records global-variant SKUs into the routing bucket AND keeps the regional rate on the bare dimension', () => {
+    // Claude Opus 5 us-west-2, rates verified against CUR 2026-08-20:
+    // regional input $0.0055, global-standard input $0.005.
+    for (const order of [
+      [
+        ['USW2-anthropic.claude-opus-5-mantle-input-tokens-global-standard', 0.005],
+        ['USW2-anthropic.claude-opus-5-mantle-input-tokens-standard', 0.0055],
+      ],
+      [
+        ['USW2-anthropic.claude-opus-5-mantle-input-tokens-standard', 0.0055],
+        ['USW2-anthropic.claude-opus-5-mantle-input-tokens-global-standard', 0.005],
+      ],
+    ] as Array<Array<[string, number]>>) {
+      const table: Record<string, {
+        dimensions: Record<string, { pricePerUnit: number }>;
+        routing?: Record<string, { dimensions: Record<string, { pricePerUnit: number }> }>;
+      }> = {};
+      for (const [ut, price] of order) {
+        recordTokenPrice(table as never, 'us-west-2', 'input', price, ut);
+      }
+      // Bare dimension: regional on-demand wins (unchanged behaviour).
+      expect(table['us-west-2'].dimensions.inputTokens.pricePerUnit).toBe(0.0055);
+      // Routing bucket: the global SKU gets a home.
+      expect(table['us-west-2'].routing?.global.dimensions.inputTokens.pricePerUnit).toBe(0.005);
+    }
+  });
+
+  it('within the global bucket, plain global beats batch-global regardless of order', () => {
+    for (const order of [
+      [
+        ['USW2-Model-input-tokens-batch-global', 0.0025],
+        ['USW2-Model-input-tokens-global-standard', 0.005],
+      ],
+      [
+        ['USW2-Model-input-tokens-global-standard', 0.005],
+        ['USW2-Model-input-tokens-batch-global', 0.0025],
+      ],
+    ] as Array<Array<[string, number]>>) {
+      const table: Record<string, {
+        routing?: Record<string, { dimensions: Record<string, { pricePerUnit: number }> }>;
+      }> = {};
+      for (const [ut, price] of order) {
+        // batch SKUs are excluded from the BARE dimension by the caller's
+        // classifier, but recordTokenPrice is only invoked for classified
+        // SKUs — call it directly to exercise bucket precedence.
+        recordTokenPrice(table as never, 'us-west-2', 'input', price, ut);
+      }
+      expect(table['us-west-2'].routing?.global.dimensions.inputTokens.pricePerUnit).toBe(0.005);
+    }
+  });
+
+  it('CRIS cross-region (non-global) SKUs do NOT create a routing bucket', () => {
+    const table: Record<string, { routing?: Record<string, unknown> }> = {};
+    recordTokenPrice(table as never, 'us-east-1', 'input', 0.0033, 'USE1-Model-input-tokens-cross-region');
+    expect(table['us-east-1'].routing).toBeUndefined();
+  });
+
   it('picks on-demand over batch REGARDLESS of arrival order (the live money bug)', () => {
     // Nova Micro us-east-1: on-demand $0.000035 vs batch $0.0000175.
     for (const order of [

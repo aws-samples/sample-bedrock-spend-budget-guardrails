@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalize, canonicalizeCurPrincipal, stripCrisPrefix } from '../src/shared/arn';
+import { canonicalize, canonicalizeCurPrincipal, routingModeOf, stripCrisPrefix } from '../src/shared/arn';
 
 describe('canonicalize CloudTrail userIdentity', () => {
   it('handles IAMUser', () => {
@@ -132,5 +132,28 @@ describe('stripCrisPrefix', () => {
     ['anthropic.claude-sonnet-4-6', 'anthropic.claude-sonnet-4-6'],
   ])('%s → %s', (input, expected) => {
     expect(stripCrisPrefix(input)).toBe(expected);
+  });
+});
+
+describe('routingModeOf', () => {
+  it.each([
+    ['global.anthropic.claude-opus-5', 'global'],
+    ['global.openai.gpt-5.6-sol', 'global'],
+    ['us.anthropic.claude-fable-5', 'us'],
+    ['eu.anthropic.claude-haiku-4-5', 'eu'],
+    ['apac.anthropic.claude-opus-4-7', 'apac'],
+  ])('%s → %s', (input, expected) => {
+    expect(routingModeOf(input)).toBe(expected);
+  });
+
+  it('returns undefined for bare model ids', () => {
+    expect(routingModeOf('anthropic.claude-opus-5')).toBeUndefined();
+    expect(routingModeOf('openai.gpt-5.6-sol')).toBeUndefined();
+  });
+
+  it('does not misread a provider segment as a routing prefix', () => {
+    // "usual.model" style ids must not match — the prefix set is closed.
+    expect(routingModeOf('usual.model-v1')).toBeUndefined();
+    expect(routingModeOf('mistral.mistral-large-2402-v1:0')).toBeUndefined();
   });
 });

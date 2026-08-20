@@ -27,7 +27,7 @@ It demonstrates a full pattern end to end: metering across every pricing dimensi
 - 📋 **Admin audit log** — every cross-account admin write (budget create/update, enrollment changes, manifest apply, user management) emits a structured audit log line + a `CrossAccountWriteAudit` CloudWatch metric. Searchable in the web app's **Admin audit** page (`/admin/audit`) via CloudWatch Logs Insights. Complemented by — not replaced by — the activity log below: 14-day CloudWatch "who changed what" vs. 365-day durable "what happened to this principal".
 - 🧾 **Per-principal activity log** — a durable ~365-day `PrincipalActivity` timeline per caller: threshold warnings, enforcement applied / released / rolled-over, budget and user changes, unenforceable budgets, and notification failures. Written by 6 Lambdas. Three surfaces: a per-principal modal from **Identities**, a self-service **My activity** page, and a super-admin central **Activity** feed backed by a `byDay` GSI.
 - 📧 **Per-identity + ops-fallback budget emails** — threshold and enforcement emails route to the person, not just the admin: SSO / identity-lens rows (`principal#sso-user#<email>`) email the SSO user's own address, and `bbg:notifyOpsFallbackAddress` catches principals that map to no human (service roles, unmapped IAM users) so they're never silent.
-- 📊 **CUR 2.0 reconciliation** (opt-in) — when you activate the `iamPrincipal` cost-allocation tag, a daily Athena query against the IAM-principal-allocated CUR cross-checks the meter and alarms on drift > $1 or 5%. Not required for near real-time metering or enforcement.
+- 📊 **CUR 2.0 reconciliation** (opt-in) — when you activate the `iamPrincipal` cost-allocation tag, a daily Athena query cross-checks the meter's invocation ledger against the IAM-principal-allocated CUR (both sides watermarked to bill-complete days, per stage) and alarms on per-principal drift > $1 sustained 3 days. Not required for near real-time metering or enforcement.
 - 🌙 **Cloudscape web app** — dark-mode-first React + Vite (single-page app) with sortable / filterable Pricing, Inference Profiles, Identities, Budgets, Reports (Athena), Enrollment, Audit log, and Spend pages. Trend charts, top-spender bars, per-model dimension breakdowns, per-region and per-account spend charts.
 - 🔐 **Passkey / WebAuthn first-factor sign-in** — no TOTP, no SMS. Cognito User Pool with Plus feature plan + per-credential nicknames you can rename. Yubikey + platform passkey both supported.
 - 🚀 **GitOps via CDK Pipelines** — push to `main` triggers CodePipeline → Build → UpdatePipeline → Assets → Dev → Prod. Self-mutating; auto-promote with optional `bbg:requireProdApproval` gate.
@@ -185,7 +185,9 @@ Practical impact:
   `ChatCompletions` APIs. Note these OpenAI models require a cross-Region
   inference profile (`us.` or `global.`) on this endpoint; in-Region inference
   isn't offered for them, and BBG resolves either profile to the underlying model
-  for pricing.
+  for pricing — **routing-aware**: `global.`-routed traffic is billed at AWS's
+  distinct Global SKU rate when one exists (for the Anthropic frontier lineup
+  Global bills ~9% below the regional rate), not the source region's rate.
 - **Anything you call on `bedrock-mantle` is not covered** — same model, same
   account, different endpoint.
 - **Some models are `bedrock-mantle`-only** and therefore cannot be metered by

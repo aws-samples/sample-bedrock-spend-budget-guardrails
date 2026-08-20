@@ -110,7 +110,7 @@ All tables are on-demand, PITR-enabled, and encrypted with the shared data-plane
 | `pricing-refresher` | EventBridge Scheduler, `cron(0 3 * * ? *)` | AWS Pricing API → `Pricing` table across three Bedrock service codes. |
 | `org-discount-resolver` | EventBridge Scheduler, `cron(20 * * * ? *)` (hourly at :20) **+ on-write** from the pricing-overrides API | Walks the AWS Organizations tree and materializes the winning `effectivePct` onto each `discount#<accountId>` row. Degrades to a **no-op** when Organizations is denied (BBG not in the management account) — logs, emits `OrgDiscountResolverDegraded`, and touches no row. |
 | `inference-profile-refresher` | EventBridge Scheduler (daily) | Walks `bedrock:ListInferenceProfiles`. |
-| `cur-reconciler` | EventBridge Scheduler (daily) | Athena query vs. the meter's totals; alarms on drift. |
+| `cur-reconciler` | EventBridge Scheduler (daily) | Athena: CUR 2.0 vs. the meter's invocation ledger, both watermarked to bill-complete days; alarms on drift. |
 | `cwl-forwarder` | CWL subscription in non-home metered regions | Ships invocation events to the home-region default event bus. |
 | `pre-token-gen` | Cognito V2 trigger | Emits the `bbg:scope` claim. |
 | `budgets-action-sync` | `Budgets` DDB stream (opt-in) | Mirrors rows to native AWS Budgets + Budget Actions. |

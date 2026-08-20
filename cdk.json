@@ -54,6 +54,7 @@
     "bbg:enableMultiAgent": false,
     "bbg:enableBudgetsAction": false,
     "bbg:requireProdApproval": false,
+    "bbg:reconciliationAlarmStages": ["prod"],
     "bbg:githubRepo": "sample-bedrock-spend-budget-guardrails",
     "bbg:githubBranch": "main",
     "bbg:githubConnectionArnSsm": "/bbg/github-connection-arn"

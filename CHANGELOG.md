@@ -8,6 +8,21 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-20
+
+### Fixed
+- **The reconciler double-counted profile-routed spend.** Its meter-side query summed ALL spend targets, but the meter writes the SAME dollars to a `profile#<arn>` row alongside every `model#` row when an inference profile is used (so admins can budget either dimension) — inflating the meter side by exactly the profile-routed share and producing phantom reconciliation drift proportional to how much of your traffic goes through inference profiles. The query now sums `model#` targets only. All prior releases are affected (the earlier RunningSpend-scan implementation had the same blind spot).
+- **`global.`-routed traffic was metered at the regional rate.** AWS bills Global routing at its own SKUs (`*_Global` / `*-global-standard`), and the rate genuinely differs — the Anthropic frontier lineup (Opus 5, Opus 4.8, Fable 5) bills Global ~9% *below* regional (e.g. Opus 5 input $0.005 vs $0.0055/1K), so `global.` inference-profile users were over-metered. Routing mode is now part of the pricing path: `routingModeOf` extracts the prefix, `PricingRow.routingDimensions[mode]` carries the mode's rates (populated automatically by the pricing-refresher from global-variant SKUs, which previously could only gap-fill), and `computeCost` prefers them over regional dimensions. The spend TARGET stays keyed by the bare model id, so existing budgets are unaffected. Historical ledger rows keep their as-metered values until the period rolls.
+- **`scripts/oss-prep.sh` scrub was macOS-only.** Its in-place `sed -i ''` calls are BSD syntax; GNU sed treats the `''` as the script and errors — swallowed by the call sites' stderr redirect, so on Linux the scrub replaced nothing while appearing to succeed. In-place edits now detect the sed dialect once and work on both. (`selftest` catches this class of failure; run it before every release.)
+
+### Changed
+- **CUR reconciliation is now watermarked and compares the Athena ledger, not RunningSpend.** The reconciler windows BOTH sides of the meter-vs-CUR comparison to bill-complete days (`now − 72h`, override `RECONCILE_WATERMARK_HOURS`), eliminating the phantom "drift" that CUR ingestion lag produces for any active principal: the base CUR export lags usage by 8–24h, and Marketplace-billed model SKUs (the entire Anthropic Claude lineup) were observed settling later than 48h — hence the 72h default. The meter side now reads the S3/Athena invocation ledger (windowable by `recordedat`) instead of the RunningSpend DynamoDB table (month-running totals, unwindowable). The reconciler Lambda loses the `RUNNING_SPEND_TABLE` env var and its DynamoDB read grant, and gains `LEDGER_DATABASE`/`LEDGER_TABLE` plus read access to the ledger bucket. Its manual-invoke payload accepts an optional `watermark` (ISO-8601) alongside `period`.
+- **`ReconciliationDelta` now carries a `stage` dimension** (`service=bbg, stage=<stagePrefix>`), and each stage's alarm watches its own series. Previously dev's and prod's reconcilers published to the SAME series, so a barely-metering dev install comparing itself against the whole account's CUR held the prod alarm red. Operators with custom dashboards/alarms pinned to the old dimension set (`service=bbg` only) must re-point them; the stack's own alarm and ops dashboard update automatically.
+- **The reconciliation alarm is now stage-gated** via `bbg:reconciliationAlarmStages` (default `["prod"]`). In a shared-account dev+prod install the invocation-log subscription belongs to one stage; the other meters a sliver of the traffic while its CUR side sees the whole account, so its reconciliation alarm is structurally meaningless. The metric still publishes on every stage — only the alarm is gated. Single-stage forks deploying only dev should set `["dev"]`.
+
+### Added
+- **`ReconciliationUnmeteredSpend` metric** (dashboard-only, per-stage): CUR-billed Bedrock spend for principals the stage's meter has never seen — pre-deployment history, another stage's traffic, or structural bypasses like `bedrock-mantle`. Splitting it out keeps the alarmed `ReconciliationDelta` meaningful: a breach now means the meter and the bill disagree about spend the meter DID see. Charted on the ops dashboard's CUR-reconciliation widget; the reconciler also logs the top-20 unmetered principals and the top-20 per-principal meter/CUR/delta breakdown every run.
+
 ## [1.2.0] - 2026-08-18
 
 ### Added
@@ -63,7 +78,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.2.0
 [1.1.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.1
 [1.1.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.1.0

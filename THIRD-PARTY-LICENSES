@@ -10,13 +10,13 @@ with scripts/gen-third-party-licenses.mjs after dependency changes.
 
 ## License summary
 
-- MIT: 220
+- MIT: 219
 - Apache-2.0: 111
 - BSD-3-Clause: 16
 - ISC: 10
 - MIT-0: 5
 - BSD-2-Clause: 5
-- MPL-2.0: 2
+- MPL-2.0: 3
 - (MIT OR GPL-3.0-or-later): 1
 - BlueOak-1.0.0: 1
 - 0BSD: 1
@@ -436,7 +436,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/clauderic/dnd-kit
 
-### @esbuild/darwin-arm64 0.28.1
+### @esbuild/linux-x64 0.28.1
 - License: MIT
 - Source: https://github.com/evanw/esbuild
 
@@ -500,7 +500,11 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/oxc-project/oxc
 
-### @rolldown/binding-darwin-arm64 1.2.1
+### @rolldown/binding-linux-x64-gnu 1.2.1
+- License: MIT
+- Source: https://github.com/rolldown/rolldown
+
+### @rolldown/binding-linux-x64-musl 1.2.1
 - License: MIT
 - Source: https://github.com/rolldown/rolldown
 
@@ -996,14 +1000,6 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/jprichardson/node-fs-extra
 
-### fsevents 2.3.2
-- License: MIT
-- Source: https://github.com/fsevents/fsevents
-
-### fsevents 2.3.3
-- License: MIT
-- Source: https://github.com/fsevents/fsevents
-
 ### function-bind 1.1.2
 - License: MIT
 - Source: https://github.com/Raynos/function-bind
@@ -1124,7 +1120,11 @@ Total third-party packages: 372
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 
-### lightningcss-darwin-arm64 1.33.0
+### lightningcss-linux-x64-gnu 1.33.0
+- License: MPL-2.0
+- Source: https://github.com/parcel-bundler/lightningcss
+
+### lightningcss-linux-x64-musl 1.33.0
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 

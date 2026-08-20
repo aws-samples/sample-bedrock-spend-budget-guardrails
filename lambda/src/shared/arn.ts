@@ -145,6 +145,29 @@ export const canonicalizeCurPrincipal = (raw: string): string => {
  * Pricing table. Cross-region inference profiles are billed at the
  * source-region rate using the bare modelId — verified 2026-05-13, no
  * separate CRIS pricing SKUs exist.
+ *
+ * `global.` is the exception to that verification: AWS DOES publish
+ * distinct Global-routing SKUs (`*_Global` / `*-global-standard`) and for
+ * several lineups (Anthropic frontier, OpenAI GPT-5.6) the Global rate
+ * DIFFERS from the regional rate — so the routing mode must not be
+ * discarded for pricing. The meter therefore also calls `routingModeOf`
+ * on the same model id and passes the mode through to `computeCost`,
+ * which prefers a `routingDimensions[mode]` rate when the Pricing row
+ * carries one. This strip stays: the bare id remains the spend TARGET
+ * key (`model#<bare>`) so budgets are per-model regardless of routing.
  */
 export const stripCrisPrefix = (modelId: string): string =>
   modelId.replace(/^(us|eu|apac|ap|global)\./, '');
+
+/**
+ * Extracts the inference routing mode from a (possibly prefixed) Bedrock
+ * model id: `global.anthropic.claude-opus-5` → `'global'`,
+ * `us.anthropic.claude-fable-5` → `'us'`, bare ids → undefined.
+ *
+ * The mode is used as a key into a Pricing row's `routingDimensions` map.
+ * Only modes with a genuinely different published rate ever have an entry
+ * (today: `global`); every other mode falls back to the regional/default
+ * dimensions, so passing `us`/`eu` through costs nothing.
+ */
+export const routingModeOf = (modelId: string): string | undefined =>
+  /^(us|eu|apac|ap|global)\./.exec(modelId)?.[1];

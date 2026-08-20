@@ -123,7 +123,25 @@ export class ObservabilityStack extends cdk.Stack {
     const reconciliationDelta = new cloudwatch.Metric({
       namespace,
       metricName: 'ReconciliationDelta',
-      dimensionsMap: serviceDim,
+      // Per-stage identity: the reconciler emits `stage=<stagePrefix>`
+      // alongside the default `service=bbg`. Without the stage dimension,
+      // dev's and prod's reconcilers publish to the SAME series and each
+      // stage's alarm fires on the other stage's deltas (observed: a dev
+      // install that meters almost nothing compared itself against the whole
+      // account's CUR and held the prod alarm red for weeks).
+      dimensionsMap: { ...serviceDim, stage: stagePrefix },
+      statistic: 'Maximum',
+      period: cdk.Duration.days(1),
+    });
+    // CUR-billed Bedrock spend for principals THIS stage never metered:
+    // pre-deployment history, another stage's traffic, or a structural bypass
+    // (e.g. `bedrock-mantle`). Deliberately dashboard-only — the operator
+    // cannot fix it by fixing the meter, so it must not feed the
+    // ReconciliationDelta alarm (see the reconciler's population split).
+    const reconciliationUnmetered = new cloudwatch.Metric({
+      namespace,
+      metricName: 'ReconciliationUnmeteredSpend',
+      dimensionsMap: { ...serviceDim, stage: stagePrefix },
       statistic: 'Maximum',
       period: cdk.Duration.days(1),
     });
@@ -271,24 +289,6 @@ export class ObservabilityStack extends cdk.Stack {
         alarmDescription:
           'pricing-refresher hit its time budget and stopped before pricing every model — some models kept stale prices this run. Usually means the run is bumping the 15min Lambda cap against the throttling Pricing API. Check PricingModelsSkipped + the refresher duration; consider raising memory or trimming per-model GetProducts. See docs/runbooks/alarms/pricing-refresh-age.md.',
       }),
-      new cloudwatch.Alarm(this, 'ReconciliationDeltaAlarm', {
-        alarmName: `${stagePrefix}-bbg-reconciliation-delta`,
-        metric: reconciliationDelta,
-        threshold: 1,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        evaluationPeriods: 3,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-        // MET-1 (B5): CUR-vs-meter drift in USD. This alarms the aggregate
-        // `ReconciliationDelta` (service=bbg, Maximum/day) — the alarmable
-        // rollup companion of the per-principal `ReconciliationDeltaUsd`
-        // drill-down metric (Principal dimension, dashboard-only; a metric
-        // alarm can't span a high-cardinality dimension). >$1/principal for
-        // 3 consecutive days means the meter is silently under- (or over-)
-        // counting spend, so budget enforcement may never fire. See
-        // docs/runbooks/alarms/reconciliation-delta.md.
-        alarmDescription:
-          'CUR-vs-meter reconciliation drift exceeded $1 per principal for 3 consecutive days. The real-time meter may be under-counting Bedrock spend (dropped log/event or a permanent identity-join miss) so enforcement may never fire. Cross-check the ReconciliationDeltaUsd per-principal metric and MeterUnjoined. See docs/runbooks/alarms/reconciliation-delta.md.',
-      }),
       new cloudwatch.Alarm(this, 'EnforcementAttachStuckAlarm', {
         alarmName: `${stagePrefix}-bbg-enforcement-attach-stuck`,
         metric: enforcementAttachStuck,
@@ -420,6 +420,41 @@ export class ObservabilityStack extends cdk.Stack {
     // NotifyError metric/alarm above (emitted from the notify handler's catch),
     // which is the real signal.
 
+    // MET-1 (B5): CUR-vs-meter drift in USD, alarmed only on stages that
+    // actually meter the account's Bedrock traffic (`bbg:reconciliationAlarmStages`,
+    // default `['prod']`). In a shared-account dev+prod install the invocation-log
+    // subscription belongs to ONE stage — the other stage meters a sliver of the
+    // traffic while its CUR side sees the whole account, so its "reconciliation"
+    // is structurally meaningless and its alarm would sit red forever (observed
+    // on dev for 13 days). Its metric still publishes per-stage for dashboards;
+    // only the alarm is gated. Single-stage forks that deploy only a dev stage
+    // should set `bbg:reconciliationAlarmStages: ["dev"]`.
+    //
+    // This alarms the aggregate `ReconciliationDelta` (service=bbg,
+    // stage=<stage>, Maximum/day) — the alarmable rollup companion of the
+    // per-principal `ReconciliationDeltaUsd` drill-down metric (Principal
+    // dimension, dashboard-only; a metric alarm can't span a high-cardinality
+    // dimension). >$1/principal for 3 consecutive days means the meter is
+    // silently under- (or over-) counting spend, so budget enforcement may
+    // never fire. See docs/runbooks/alarms/reconciliation-delta.md.
+    const reconciliationAlarmStages = (this.node.tryGetContext(
+      'bbg:reconciliationAlarmStages',
+    ) as string[] | undefined) ?? ['prod'];
+    if (reconciliationAlarmStages.includes(stagePrefix)) {
+      alarms.push(
+        new cloudwatch.Alarm(this, 'ReconciliationDeltaAlarm', {
+          alarmName: `${stagePrefix}-bbg-reconciliation-delta`,
+          metric: reconciliationDelta,
+          threshold: 1,
+          comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+          evaluationPeriods: 3,
+          treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+          alarmDescription:
+            'CUR-vs-meter reconciliation drift exceeded $1 per principal for 3 consecutive days. Both sides are watermarked to bill-complete days (default now-72h; Marketplace-billed model SKUs settle slower than the base 8-24h CUR lag), so this is NOT CUR ingestion lag: the meter and the bill genuinely disagree about spend the meter DID see (dropped log/event, identity-join miss, or stale pricing) and enforcement may be mis-firing. CUR-only spend the stage never metered is excluded — see the ReconciliationUnmeteredSpend metric for that. Cross-check ReconciliationDeltaUsd per-principal and MeterUnjoined. See docs/runbooks/alarms/reconciliation-delta.md.',
+        }),
+      );
+    }
+
     for (const alarm of alarms) {
       alarm.addAlarmAction(new cwActions.SnsAction(this.alertTopic));
     }
@@ -540,6 +575,7 @@ exports.handler = async () => {
           new cloudwatch.GraphWidget({
             title: 'CUR reconciliation',
             left: [reconciliationDelta],
+            right: [reconciliationUnmetered],
             width: 12,
           }),
         ],

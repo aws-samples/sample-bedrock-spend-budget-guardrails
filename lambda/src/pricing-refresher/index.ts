@@ -12,6 +12,8 @@ import { getConfiguredMemoryMb, recordSelfCost } from '../shared/self-cost.js';
 import {
   classifyAmazonBedrockUsage,
   classifyFoundationModelsUsage,
+  routingBucketPrecedence,
+  routingModeOfUsagetype,
   classifyNonTokenUsage,
   skuPrecedence,
   type TokenKind,
@@ -92,6 +94,25 @@ interface PriceRow {
    * dimension REGARDLESS of GetProducts response order.
    */
   precedence: Partial<Record<DimensionKind, number>>;
+  /**
+   * Routing-mode rate buckets (today only `global`). Global-routing SKUs
+   * (`*_Global` / `*-global-standard` / `*-cross-region-global`) carry a
+   * genuinely DIFFERENT billed rate from the plain regional SKU (Anthropic
+   * frontier bills Global ~9% below regional; OpenAI GPT-5.6 also below), so
+   * instead of only gap-filling the bare dimensions (their precedence-20
+   * behavior, unchanged), they ALSO record here under their mode. The meter
+   * selects this bucket when the invocation's model id carried the matching
+   * routing prefix. Within a bucket, batch/flex/priority variants of the
+   * global family still lose to the plain global SKU via the same
+   * claim()/precedence rules.
+   */
+  routing?: Record<
+    string,
+    {
+      dimensions: Partial<Record<DimensionKind, Dimension>>;
+      precedence: Partial<Record<DimensionKind, number>>;
+    }
+  >;
 }
 
 export interface RegionalPricing {
@@ -250,6 +271,11 @@ const recordTokenPrice = (
 ): void => {
   const row = ensureRegion(table, region);
   const dimKind = tokenKindToDimensionKind[kind];
+  recordRoutingVariant(row, dimKind, usagetype, {
+    unit: '1K tokens',
+    pricePerUnit: pricePer1k,
+    label: tokenKindLabel[kind],
+  });
   if (!claim(row, dimKind, skuPrecedence(usagetype), pricePer1k)) return;
   if (kind === 'input') row.inputPer1k = pricePer1k;
   if (kind === 'output') row.outputPer1k = pricePer1k;
@@ -262,6 +288,36 @@ const recordTokenPrice = (
   };
 };
 
+/**
+ * When the SKU is a routing-mode variant (today: `global`), record it into
+ * the row's per-mode bucket with its own claim() precedence. This runs IN
+ * ADDITION to the bare-dimension claim above (where such SKUs remain
+ * demoted gap-fillers) — the bucket is what lets the meter bill
+ * `global.`-routed traffic at the actual Global rate instead of the
+ * regional rate (~9% higher for the Anthropic frontier lineup).
+ */
+const recordRoutingVariant = (
+  row: PriceRow,
+  kind: DimensionKind,
+  usagetype: string,
+  dim: Dimension,
+): void => {
+  const mode = routingModeOfUsagetype(usagetype);
+  if (!mode) return;
+  const bucket = ((row.routing ??= {})[mode] ??= { dimensions: {}, precedence: {} });
+  const prec = routingBucketPrecedence(usagetype);
+  const cur = bucket.precedence[kind];
+  if (cur !== undefined) {
+    if (cur < prec) return;
+    if (cur === prec) {
+      const curPrice = bucket.dimensions[kind]?.pricePerUnit;
+      if (curPrice !== undefined && curPrice <= dim.pricePerUnit) return;
+    }
+  }
+  bucket.precedence[kind] = prec;
+  bucket.dimensions[kind] = dim;
+};
+
 const recordNonTokenPrice = (
   table: RegionalPricing,
   region: string,
@@ -272,6 +328,7 @@ const recordNonTokenPrice = (
   label?: string,
 ): void => {
   const row = ensureRegion(table, region);
+  recordRoutingVariant(row, kind, usagetype, { unit, pricePerUnit, label });
   if (!claim(row, kind, skuPrecedence(usagetype), pricePerUnit)) return;
   row.dimensions[kind] = { unit, pricePerUnit, label };
 };
@@ -741,6 +798,12 @@ const writePricingRow = async (
   let cacheWritePer1k: number | undefined;
   const topDimensions: Partial<Record<DimensionKind, Dimension>> = {};
   const regionDimensions: Record<string, Partial<Record<DimensionKind, Dimension>>> = {};
+  // Routing-mode rates (today: `global`). Flat mode→dimensions map,
+  // first-region-wins like topDimensions — AWS publishes one Global rate per
+  // model (the routing SKU is region-prefixed in usagetype but carries the
+  // same price everywhere observed); revisit if a real per-region Global
+  // divergence ever appears.
+  const routingDimensions: Record<string, Partial<Record<DimensionKind, Dimension>>> = {};
   const regionRates: Record<
     string,
     { inputPer1k?: number; outputPer1k?: number; cacheReadPer1k?: number; cacheWritePer1k?: number }
@@ -761,6 +824,14 @@ const writePricingRow = async (
     for (const [k, dim] of Object.entries(r.dimensions) as Array<[DimensionKind, Dimension]>) {
       topDimensions[k] ??= dim;
     }
+    for (const [mode, bucket] of Object.entries(r.routing ?? {})) {
+      const target = (routingDimensions[mode] ??= {});
+      for (const [k, dim] of Object.entries(bucket.dimensions) as Array<
+        [DimensionKind, Dimension]
+      >) {
+        target[k] ??= dim;
+      }
+    }
   }
 
   await ddb.send(
@@ -779,6 +850,9 @@ const writePricingRow = async (
         // Multi-dim schema.
         dimensions: topDimensions,
         regionDimensions,
+        // Routing-mode rates (only written when a mode has entries — the
+        // meter treats a missing map as "no routing-specific rate").
+        ...(Object.keys(routingDimensions).length > 0 ? { routingDimensions } : {}),
         source,
         notes,
         currency: 'USD',

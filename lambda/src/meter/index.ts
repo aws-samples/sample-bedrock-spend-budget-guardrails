@@ -24,6 +24,7 @@ import {
   type RateLimitFields,
 } from '../shared/rate-limits.js';
 import { getConfiguredMemoryMb, recordSelfCost } from '../shared/self-cost.js';
+import { videoBillingOf, type VideoBilling } from '../shared/video-billing.js';
 
 const RUNNING_SPEND_TABLE = process.env.RUNNING_SPEND_TABLE!;
 const IDENTITY_CACHE_TABLE = process.env.IDENTITY_CACHE_TABLE!;
@@ -186,6 +187,10 @@ const lookupBudgetMeta = async (principal: string, target: string): Promise<Budg
  * region per AWS docs.
  */
 export interface BedrockInvocationLog {
+  serviceTier?: string;
+  status?: string;
+  error?: unknown;
+  errorCode?: string;
   schemaType?: string;
   timestamp?: string;
   region?: string;
@@ -213,6 +218,8 @@ export interface BedrockInvocationLog {
    */
   identity?: { arn?: string };
   input?: {
+    inputBodyJson?: { resolution?: string; duration?: string };
+    inputContentType?: string;
     inputTokenCount?: number;
     cacheReadInputTokenCount?: number;
     cacheWriteInputTokenCount?: number;
@@ -220,15 +227,23 @@ export interface BedrockInvocationLog {
     videoInputDurationSeconds?: number;
   };
   output?: {
+    outputContentType?: string;
+    outputImageCount?: number;
     outputTokenCount?: number;
     outputImagesCount?: number;
     outputVideoDurationSeconds?: number;
+    outputVideoWidth?: number;
+    outputVideoHeight?: number;
+    outputVideoFramesPerSecond?: number;
     outputAudioDurationSeconds?: number;
     searchUnits?: number;
   };
 }
 
 interface MeterPayload {
+  videoBilling?: VideoBilling;
+  serviceTier?: string;
+  usageSource?: string;
   requestId: string;
   modelId: string;
   inferenceProfileArn?: string;
@@ -317,12 +332,14 @@ const upsertSpend = async (
   // account-level; lens rows share the role's account). Non-ARN principals
   // resolve to undefined → no discount.
   const discountPct = await lookupDiscountPct(accountFromPrincipal(principal));
-  const { spendUsd, priced, dimensionsCost, dimensionsUsage } = computeCost(
+  const { spendUsd, priced, dimensionsCost, dimensionsUsage, missingDimensions } = computeCost(
     pricing,
     payload.region,
     payload.usage,
     discountPct,
     routing,
+    payload.serviceTier,
+    payload.videoBilling,
   );
   // Budget window/meta is resolved against the ROW's principal — a lens row's
   // budget is keyed by the lens principal. For the primary row that's the
@@ -347,6 +364,18 @@ const upsertSpend = async (
   // the parent map, so we don't need a `SET dimUsage = if_not_exists(...)`
   // pre-clause — and including one would conflict with the ADD path.
   const setClauses: string[] = ['lastUpdated = :now', 'period = :period', 'target = :target'];
+  // Preserve the metadata required to explain/reprice this stream delta later.
+  for (const [key, value] of Object.entries({
+    lastRequestId: payload.requestId, lastSourceRegion: payload.region,
+    lastRoutingMode: routing ?? '', lastServiceTier: payload.serviceTier ?? 'default',
+    lastUsageSource: payload.usageSource ?? 'invocation-counters',
+    lastPricingModelId: stripCrisPrefix(payload.modelId),
+    lastDiscountPct: discountPct ?? 0,
+    lastVideoBilling: payload.videoBilling ?? {},
+  })) {
+    exprValues[`:${key}`] = value;
+    setClauses.push(`${key} = :${key}`);
+  }
 
   // Identity-lens marker attributes (set-once, never change for a row).
   if (lens) {
@@ -393,6 +422,7 @@ const upsertSpend = async (
   if (!priced && Object.keys(dimensionsUsage).length > 0) {
     exprValues[':one'] = 1;
     addClauses.push('unpricedInvocations :one');
+    addClauses.push('unpricedRequestIds :rid');
   }
 
   // per-region attribution. payload.region is the source region
@@ -441,7 +471,13 @@ const upsertSpend = async (
       }),
     );
     metrics.addMetric('MeterSpendCommitted', MetricUnit.Count, 1);
-    if (!priced) metrics.addMetric('UnpricedInvocations', MetricUnit.Count, 1);
+    // One increment per committed primary invocation, not per profile/lens.
+    if (!lens && target.startsWith('model#') && !priced) {
+      metrics.addMetric('UnpricedInvocations', MetricUnit.Count, 1);
+      logger.warn('Invocation has unpriced dimensions', {
+        requestId: payload.requestId, modelId: payload.modelId, missingDimensions,
+      });
+    }
   } catch (err) {
     if ((err as { name?: string }).name === 'ConditionalCheckFailedException') {
       // Already processed — idempotent retry.
@@ -622,7 +658,7 @@ export const extractUsage = (log: BedrockInvocationLog): UsageCounts => ({
   outputTokens: log.output?.outputTokenCount,
   cacheReadTokens: log.input?.cacheReadInputTokenCount,
   cacheWriteTokens: log.input?.cacheWriteInputTokenCount,
-  outputImages: log.output?.outputImagesCount,
+  outputImages: log.output?.outputImagesCount ?? log.output?.outputImageCount ?? singleImageCount(log),
   inputVideoSeconds: log.input?.videoInputDurationSeconds,
   outputVideoSeconds: log.output?.outputVideoDurationSeconds,
   inputAudioSeconds: log.input?.audioInputDurationSeconds,
@@ -635,20 +671,41 @@ export const extractUsage = (log: BedrockInvocationLog): UsageCounts => ({
  * lookup and (b) the inference-profile ARN if the caller invoked through
  * a profile (Bedrock surfaces the full ARN in `modelId` in that case).
  */
-const canonicalizeModelId = (
+export const canonicalizeModelId = (
   rawModelId: string,
   fallbackProfileArn: string | undefined,
 ): { modelId: string; inferenceProfileArn?: string } => {
   // Inference-profile ARN: arn:aws:bedrock:<region>:<acct>:inference-profile/<id>
   const profileMatch = rawModelId.match(
-    /^arn:aws:bedrock:[^:]+:[^:]*:inference-profile\/(.+)$/,
+    /^arn:aws(?:-us-gov|-cn)?:bedrock:[^:]+:[^:]*:inference-profile\/(.+)$/,
   );
   if (profileMatch) {
     // The profile id is the trailing segment, e.g. `us.anthropic.claude-opus-4-7`.
     // For pricing we strip the CRIS prefix and look up the base model.
     return { modelId: profileMatch[1], inferenceProfileArn: rawModelId };
   }
-  return { modelId: rawModelId, inferenceProfileArn: fallbackProfileArn };
+  const foundation = rawModelId.match(
+    /^arn:aws(?:-us-gov|-cn)?:bedrock:[^:]+:[^:]*:foundation-model\/(.+)$/,
+  );
+  return { modelId: foundation?.[1] ?? rawModelId, inferenceProfileArn: fallbackProfileArn };
+};
+
+// These Stability APIs return one image per successful synchronous generation.
+// A metadata-only invocation log still includes outputContentType. Never infer
+// a count for arbitrary models, errors, or zero-valued explicit counters.
+const SINGLE_IMAGE_MODELS = new Set([
+  'stability.sd3-5-large-v1:0', 'stability.stable-image-core-v1:0',
+  'stability.stable-image-core-v1:1', 'stability.stable-image-ultra-v1:0',
+  'stability.stable-image-ultra-v1:1',
+  ...Object.keys(IMAGE_GENERATION_PRICES),
+]);
+const singleImageCount = (log: BedrockInvocationLog): number | undefined => {
+  const model = stripCrisPrefix(canonicalizeModelId(log.modelId ?? '', undefined).modelId);
+  if (log.schemaType !== 'ModelInvocationLog' || log.operation !== 'InvokeModel'
+    || !log.output?.outputContentType || log.error || log.errorCode
+    || (log.status && !['success', 'succeeded', 'completed'].includes(log.status.toLowerCase()))
+    || !SINGLE_IMAGE_MODELS.has(model)) return undefined;
+  return 1;
 };
 
 /**
@@ -659,22 +716,8 @@ const canonicalizeModelId = (
  * zero record so the idempotency guard on processedRequestIds doesn't
  * block the real one.
  */
-const hasUsage = (log: BedrockInvocationLog): boolean => {
-  const i = log.input ?? {};
-  const o = log.output ?? {};
-  return Boolean(
-    (i.inputTokenCount && i.inputTokenCount > 0) ||
-      (o.outputTokenCount && o.outputTokenCount > 0) ||
-      (i.cacheReadInputTokenCount && i.cacheReadInputTokenCount > 0) ||
-      (i.cacheWriteInputTokenCount && i.cacheWriteInputTokenCount > 0) ||
-      (o.outputImagesCount && o.outputImagesCount > 0) ||
-      (i.videoInputDurationSeconds && i.videoInputDurationSeconds > 0) ||
-      (o.outputVideoDurationSeconds && o.outputVideoDurationSeconds > 0) ||
-      (i.audioInputDurationSeconds && i.audioInputDurationSeconds > 0) ||
-      (o.outputAudioDurationSeconds && o.outputAudioDurationSeconds > 0) ||
-      (o.searchUnits && o.searchUnits > 0),
-  );
-};
+const hasUsage = (log: BedrockInvocationLog): boolean =>
+  Object.values(extractUsage(log)).some((count) => Number.isFinite(count) && count! > 0);
 
 const processInvocation = async (log: BedrockInvocationLog): Promise<void> => {
   if (!log.requestId || !log.modelId) return;
@@ -683,7 +726,19 @@ const processInvocation = async (log: BedrockInvocationLog): Promise<void> => {
   // real totals come in the SECOND record. Skip empty records so the
   // idempotency guard doesn't lock in the zeroes and drop the real
   // billing record on arrival.
-  if (!hasUsage(log)) return;
+  if (!hasUsage(log)) {
+    // A failed request may have no output or usage at all (for example,
+    // ServiceUnavailableException). That is not evidence of missing billable
+    // counters. Keep this inside !hasUsage so partial usage still gets metered.
+    if (log.error || log.errorCode) return;
+    if (Object.values(extractUsage(log)).every((count) => count === undefined)) {
+      metrics.addMetric('MeterUsageMissing', MetricUnit.Count, 1);
+      logger.warn('Invocation metadata has no supported usage counters', {
+        modelId: log.modelId, requestId: log.requestId, operation: log.operation,
+      });
+    }
+    return;
+  }
 
   const { modelId, inferenceProfileArn } = canonicalizeModelId(
     log.modelId,
@@ -695,6 +750,11 @@ const processInvocation = async (log: BedrockInvocationLog): Promise<void> => {
     modelId,
     inferenceProfileArn,
     usage: extractUsage(log),
+    serviceTier: log.serviceTier,
+    videoBilling: videoBillingOf(log),
+    usageSource: log.output?.outputImagesCount === undefined
+      && log.output?.outputImageCount === undefined && singleImageCount(log) === 1
+      ? 'single-image-request' : 'invocation-counters',
     // Pricing follows the source region (the region that owns the log
     // group). `inferenceRegion` may differ for cross-region inference
     // profiles but doesn't drive the rate.
@@ -911,3 +971,4 @@ export const handler = async (
   metrics.publishStoredMetrics();
   return { processed };
 };
+import { IMAGE_GENERATION_PRICES } from '../pricing-refresher/published-pricing.js';

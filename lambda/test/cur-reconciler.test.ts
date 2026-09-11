@@ -147,6 +147,9 @@ describe('cur-reconciler', () => {
     expect(cur.queryString).toContain('arn:aws:iam::$1:role/$2');
     expect(cur.queryString).toMatch(/GROUP BY regexp_replace\(line_item_iam_principal/);
     expect(cur.queryString).toContain('line_item_usage_start_date < CAST(? AS TIMESTAMP)');
+    expect(cur.queryString).not.toContain('line_item_iam_principal IS NOT NULL');
+    expect(cur.queryString).toContain('line_item_resource_id AS target');
+    expect(cur.queryString).toContain('line_item_usage_account_id AS account');
     expect(cur.queryString).not.toContain('2026-05');
     expect(cur.parameters).toEqual(["'2026-05-01 00:00:00'", "'2026-05-28 00:00:00'"]);
 
@@ -157,7 +160,7 @@ describe('cur-reconciler', () => {
     // including them double-counts profile-routed spend (observed: +$24
     // phantom drift on a month with ~25% profile-routed traffic).
     expect(ledger.queryString).toContain('FROM test_ledger.invocations');
-    expect(ledger.queryString).toContain('recordedat < ?');
+    expect(ledger.queryString).toContain('coalesce(effectiveat, recordedat) < ?');
     expect(ledger.queryString).toContain("target LIKE 'model#%'");
     expect(ledger.queryString).not.toContain('2026-05');
     expect(ledger.parameters).toEqual(["'2026-05'", `'${WATERMARK}'`]);
@@ -243,5 +246,17 @@ describe('cur-reconciler', () => {
     const unmetered = capturedMetrics.filter((m) => m.name === 'ReconciliationUnmeteredSpend');
     expect(unmetered).toHaveLength(1);
     expect(unmetered[0].value).toBe(0);
+  });
+
+  it('retains null-principal CUR rows and emits their attribution limitation', async () => {
+    const data = (p: string | undefined, usd: string, t: string) => ({
+      Data: [{ VarCharValue: p }, { VarCharValue: usd }, { VarCharValue: t }, { VarCharValue: '111122223333' }],
+    });
+    curRows = [data(undefined, '195', 'arn:aws:bedrock:us-west-2::foundation-model/luma.ray-v2:0')];
+    ledgerRows = [data('principal#arn:aws:iam::111122223333:role/Video', '195', 'model#luma.ray-v2:0')];
+    await handler({ period: '2026-05', watermark: WATERMARK });
+    expect(capturedMetrics).toContainEqual({ name: 'ReconciliationDelta', value: 0 });
+    expect(capturedMetrics).toContainEqual({ name: 'ReconciliationUnattributedSpend', value: 195 });
+    expect(capturedMetrics).toContainEqual({ name: 'ReconciliationUnmeteredSpend', value: 0 });
   });
 });

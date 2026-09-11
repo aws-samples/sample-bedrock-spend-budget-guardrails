@@ -15,6 +15,8 @@
  * entry, prove it with `scripts/test-pricing-refresher.ts --model <id>`.
  */
 export const MODEL_ALIASES: Record<string, { fm?: string; ab?: string }> = {
+  'amazon.nova-reel-v1:0': { ab: 'Nova Reel' },
+  'amazon.nova-reel-v1:1': { ab: 'Nova Reel' },
   // Cohere embeddings — the marketing rename inserts/reorders the word "Model".
   'cohere.embed-english-v3': { fm: 'Cohere Embed 3 Model - English' },
   'cohere.embed-english-v3:0:512': { fm: 'Cohere Embed 3 Model - English' },

@@ -338,6 +338,17 @@ export class DataStack extends cdk.Stack {
             { name: 'enforcementreason', type: 'string' },
             { name: 'lastupdated', type: 'string' },
             { name: 'recordedat', type: 'string' },
+            { name: 'effectiveat', type: 'string' },
+            { name: 'correctionid', type: 'string' },
+            { name: 'requestid', type: 'string' },
+            { name: 'modelid', type: 'string' },
+            { name: 'routingmode', type: 'string' },
+            { name: 'servicetier', type: 'string' },
+            { name: 'usagesource', type: 'string' },
+            { name: 'discountpct', type: 'double' },
+            { name: 'usage', type: 'map<string,double>' },
+            { name: 'costs', type: 'map<string,double>' },
+            { name: 'unpricedinvocations', type: 'bigint' },
             // `account` is the display-attribution account id derived from
             // the principal ARN (iam or sts), or '(unknown)' — mirrors
             // accountForDisplay in the spend API. Appended after the

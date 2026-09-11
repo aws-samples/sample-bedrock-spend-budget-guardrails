@@ -4,7 +4,7 @@
 
 CloudWatch alarm `<stage>-bbg-reconciliation-delta` fires when the `bbg.ReconciliationDelta` metric (dimensions `service=bbg, stage=<stage>`) is `> $1` for **3 consecutive evaluation periods** (`treatMissingData: NOT_BREACHING`). The metric is the absolute USD difference between the stage's **invocation ledger** (S3/Athena, written by `ledger-writer`) and the Cost & Usage Report (CUR 2.0) `line_item_iam_principal` allocation, computed once per day per principal by the `cur-reconciler` Lambda.
 
-Both sides of the comparison are **watermarked to bill-complete days** (`now − 72h`, override `RECONCILE_WATERMARK_HOURS`), so CUR ingestion lag cannot produce a breach. And the metric only covers principals the stage's meter has actually seen — CUR-billed spend the stage never metered (pre-deployment history, another stage's traffic, structural bypasses like `bedrock-mantle`) rolls up into the dashboard-only `bbg.ReconciliationUnmeteredSpend` metric instead. A persistent breach therefore means the meter and the bill genuinely disagree about spend the meter **did** see — BBG is over- or under-counting a principal's Bedrock spend, so budget enforcement may be mis-firing.
+Both sides of the comparison are **watermarked to bill-complete days** (`now − 72h`, override `RECONCILE_WATERMARK_HOURS`), which reduces ordinary CUR lag but does not guarantee billing completeness for every model. Confirm that the model has matching CUR line items before attributing a difference to the meter. And the metric only covers principals the stage's meter has actually seen — CUR-billed spend the stage never metered (pre-deployment history, another stage's traffic, structural bypasses like `bedrock-mantle`) rolls up into the dashboard-only `bbg.ReconciliationUnmeteredSpend` metric instead. A persistent breach means the current meter estimate and available bill disagree about spend the meter **did** see — BBG is over- or under-counting a principal's Bedrock spend, so budget enforcement may be mis-firing.
 
 Default threshold: `> $1` over 3 periods. The alarm only exists on stages listed in `bbg:reconciliationAlarmStages` (default `["prod"]`) — a stage that doesn't own the account's invocation-log subscription meters only a sliver of the traffic its CUR side sees, so its reconciliation alarm would be structurally red.
 
@@ -28,6 +28,14 @@ The companion metric `bbg.ReconciliationDeltaUsd` is emitted with a `Principal` 
 
 ## Investigation
 
+Check the `CUR caller attribution unavailable` log entry and
+`ReconciliationUnattributedSpend` metric. A group starting with `account-model#`
+compares the complete model total in that account; it is not a principal.
+CUR can supply a model resource ARN while omitting the caller identity, as
+observed for Luma `StartAsyncInvoke`. Search the full product map and resource
+ARN before deciding that model charges are absent. `Ray v2` and `Ray-V2` do
+not match a literal `ray2` search.
+
 ```bash
 # Tail the most recent reconciler run. NOTE: the function uses a custom
 # LoggingConfig log group (NOT /aws/lambda/<fn>) — resolve it first.
@@ -44,11 +52,11 @@ aws cloudwatch get-metric-statistics --namespace bbg --metric-name Reconciliatio
   --period 86400 --statistics Maximum --region us-west-2
 
 # Inspect this principal's metered spend in the ledger (Athena) — same source
-# the reconciler reads, windowable by recordedat
+# the reconciler reads, windowable by coalesce(effectiveat, recordedat)
 # SELECT principal, sum(spendusd) FROM dev_bbg_ledger.invocations
 #   WHERE period = '2026-08' AND principal = 'principal#<arn>'
 #   AND target LIKE 'model#%'  -- profile# rows duplicate model# dollars
-#   AND recordedat < '<watermark-iso>' GROUP BY principal
+#   AND coalesce(effectiveat, recordedat) < '<watermark-iso>' GROUP BY principal
 
 # Manually re-run the reconciler for a specific period (optionally pin the watermark)
 aws lambda invoke --function-name dev-bbg-cur-reconciler --region us-west-2 \
@@ -65,12 +73,12 @@ aws cloudwatch get-metric-statistics --namespace bbg --metric-name MeterUnjoined
 ## Remediation
 
 - **Bypassed metering path**: extend `meter/index.ts` to recognize the new event shape; add a fixture under `lambda/test/fixtures/cwl/`. Backfill the affected period by running `scripts/backfill-from-cur.ts` (Athena query → re-write `RunningSpend` rows; the ledger-writer picks the corrections up off the stream).
-- **Pricing drift**: confirm `pricing-refresher` is healthy (see the `PricingRefreshAge` runbook). For closed periods, document the drift and accept it — historical ledger rows are immutable.
+- **Pricing drift**: confirm `pricing-refresher` is healthy (see the `PricingRefreshAge` runbook). Historical ledger rows are immutable, but reviewed additive corrections can repair missing amounts while preserving original usage dates; see [Pricing accuracy](../../pricing-accuracy.md).
 - **Identity canonicalization mismatch**: confirm in `lambda/src/identity-cache/index.ts` that the principal type (assumed-role, federated user, IAM user, root, service) is canonicalized consistently with the CUR mapping in `cur-reconciler/index.ts`. See [`docs/architecture.md`](../../architecture.md) §"Identity canonicalization" for the rules.
 - **Ledger-writer gaps**: check the `ledger-writer` Lambda's errors/DLQ for the period; re-drive the stream window if events were lost.
 - **Cross-region spend**: add the missing region to `METERED_REGIONS` and redeploy the MeteringStack in that region.
 
-Acceptance: next reconciler run produces a delta `< $1` for all principals; alarm returns to OK within 3 days.
+Acceptance: known metering gaps are corrected and the next reconciler run reflects the repairs at their original usage dates. If valid estimates still lack CUR counterparts, retain and document the delta; do not zero prices or raise thresholds solely to clear the alarm. Once comparable totals remain within $1, the alarm returns to OK as its evaluation window advances.
 
 ## Related Lambda runbooks
 

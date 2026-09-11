@@ -1,4 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+const capturedGrokSkus = JSON.parse(readFileSync(new URL('./fixtures/grok-46-pricing.json', import.meta.url), 'utf8'));
+const capturedReelSkus = JSON.parse(readFileSync(new URL('./fixtures/nova-reel-pricing.json', import.meta.url), 'utf8'));
+const capturedLumaSkus = JSON.parse(readFileSync(new URL('./fixtures/luma-ray-pricing.json', import.meta.url), 'utf8'));
 
 /**
  * Locks in the bulk-primary contract (the fix for the 5-region truncation):
@@ -120,8 +124,8 @@ vi.mock('../src/pricing-refresher/bulk-offer.js', async (importOriginal) => {
     ...real,
     loadRegionOfferSkus: vi.fn(async (region: string, serviceCode = 'AmazonBedrock') => {
       loadCalls.push({ region, serviceCode });
-      if (serviceCode === 'AmazonBedrock') return AB_SKUS;
-      if (serviceCode === 'AmazonBedrockFoundationModels') return FM_SKUS;
+      if (serviceCode === 'AmazonBedrock') return [...AB_SKUS, ...capturedGrokSkus, ...capturedReelSkus];
+      if (serviceCode === 'AmazonBedrockFoundationModels') return [...FM_SKUS, ...capturedLumaSkus];
       return [];
     }),
   };
@@ -169,6 +173,54 @@ describe('pricing-refresher — bulk-primary contract', () => {
     // Query API returns nothing if it's ever reached (it shouldn't be for
     // bulk-priced models).
     pricingSendMock.mockResolvedValue({ PriceList: [], NextToken: undefined });
+  });
+
+  it('retains both captured Ray v2 resolution SKUs in the stored pricing row', async () => {
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'luma.ray-v2:0', modelName: 'Ray v2', providerName: 'Luma AI' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).toEqual([]);
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'luma.ray-v2:0')![0].input.Item;
+    // Test loader is scoped to us-east-1; fixture carries the real Oregon SKUs.
+    expect(row.videoOutputPricing.regionRates['us-east-1']).toMatchObject({
+      HD: { pricePerUnit: 1.5 }, Standard: { pricePerUnit: 0.75 },
+    });
+    expect(row.dimensions.outputVideoSeconds.pricePerUnit).toBe(0.75);
+  });
+
+  it('matches Grok by stable model ID and interprets the documented Nova Reel seconds unit', async () => {
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'xai.grok-4.6', modelName: 'Grok 4.6', providerName: 'xAI' },
+      { modelId: 'amazon.nova-reel-v1:0', modelName: 'Nova Reel', providerName: 'Amazon' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).toEqual([]);
+    const rows = ddbSendMock.mock.calls.filter(([c]) => c._kind === 'PutCommand').map(([c]) => c.input.Item);
+    const grok = rows.find((r) => r.model === 'xai.grok-4.6');
+    expect(grok.dimensions.inputTokens.pricePerUnit).toBe(0.0022);
+    expect(grok.routingDimensions.global.outputTokens.pricePerUnit).toBe(0.006);
+    const reel = rows.find((r) => r.model === 'amazon.nova-reel-v1:0');
+    expect(reel.dimensions.outputVideoSeconds).toMatchObject({ unit: 'seconds', pricePerUnit: 0.08 });
+  });
+
+  it('writes reviewed Astra pricing with context tiers and preserves operator overrides', async () => {
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'openai.gpt-6-astra', modelName: 'GPT-6 Astra', providerName: 'OpenAI' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).toEqual([]);
+    const put = ddbSendMock.mock.calls.find(([c]) => c._kind === 'PutCommand' && c.input.Item.model === 'openai.gpt-6-astra')![0].input;
+    expect(put.Item.source).toBe('aws-website');
+    expect(put.Item.contextTiers[0].minInputTokens).toBe(272001);
+    expect(put.ConditionExpression).toContain('#source <> :override');
+    expect(captured().find((m) => m.name === 'PricingGapCount')?.value).toBe(0);
+    ddbSendMock.mockImplementation(async (c) => {
+      if (c._kind === 'PutCommand') throw Object.assign(new Error('operator override'), { name: 'ConditionalCheckFailedException' });
+      return {};
+    });
+    await expect((await importHandler())()).resolves.toMatchObject({ gaps: [] });
   });
 
   it('prices from bulk WITHOUT any GetProducts calls, and loads BOTH service codes', async () => {

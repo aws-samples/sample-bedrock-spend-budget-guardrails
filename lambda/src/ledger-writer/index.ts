@@ -91,6 +91,12 @@ const delta = (next: SpendRow, prev: OldImage | undefined): SpendRow => ({
   enforcementReason: next.enforcementReason,
 });
 
+const dimensionDeltas = (next: SpendRow, prev: SpendRow | undefined, prefix: string): Record<string, number> =>
+  Object.fromEntries(Object.entries(next)
+    .filter(([k, v]) => k.startsWith(prefix) && typeof v === 'number')
+    .map(([k, v]) => [k.slice(prefix.length), (v as number) - Number(prev?.[k] ?? 0)])
+    .filter(([, v]) => v !== 0));
+
 export const handler = async (event: DynamoDBStreamEvent): Promise<{ written: number }> => {
   const lines: string[] = [];
   for (const record of event.Records) {
@@ -105,8 +111,17 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<{ written: nu
     // these dollars to the ledger; writing lens rows too would double-count
     // in Athena / Reports / CUR reconciliation.
     if (newRow.identityLens) continue;
+    // The repair runner emits an immutable ledger object with exact historical
+    // event times. Ordinary writes following the repair still flow normally.
+    if (newRow.lastCorrectionSuppressLedger === true
+      && newRow.lastCorrectionId !== prev?.lastCorrectionId) continue;
     const d = delta(newRow, prev);
-    if ((d.spendUsd ?? 0) === 0 && (d.inputTokens ?? 0) === 0 && (d.outputTokens ?? 0) === 0) continue;
+    const usage = dimensionDeltas(newRow, prev, 'usage_');
+    const costs = dimensionDeltas(newRow, prev, 'cost_');
+    const unpriced = Number(newRow.unpricedInvocations ?? 0) - Number(prev?.unpricedInvocations ?? 0);
+    if ((d.spendUsd ?? 0) === 0 && (d.inputTokens ?? 0) === 0 && (d.outputTokens ?? 0) === 0
+      && Object.keys(usage).length === 0 && unpriced === 0) continue;
+    const correction = newRow.lastCorrectionId && newRow.lastCorrectionId !== prev?.lastCorrectionId;
     // Emit an explicit, stable column set (mirrors the Glue table schema in
     // data-stack.ts). We intentionally do NOT spread `...d` — that would
     // leak the dynamic `region_<code>` attrs + the enforcementPolicyArn into
@@ -127,6 +142,18 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<{ written: nu
         enforcementReason: d.enforcementReason,
         lastUpdated: d.lastUpdated,
         recordedAt: new Date().toISOString(),
+        effectiveAt: correction ? newRow.lastCorrectionEffectiveAt : d.lastUpdated,
+        correctionId: correction ? newRow.lastCorrectionId : undefined,
+        requestId: newRow.lastRequestId,
+        modelId: newRow.lastPricingModelId,
+        routingMode: newRow.lastRoutingMode,
+        serviceTier: newRow.lastServiceTier,
+        videoBilling: newRow.lastVideoBilling,
+        usageSource: newRow.lastUsageSource,
+        discountPct: newRow.lastDiscountPct,
+        usage,
+        costs,
+        unpricedInvocations: unpriced,
       }),
     );
   }

@@ -6,7 +6,8 @@ import {
 } from '@aws-sdk/client-pricing';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import type { Dimension, DimensionKind } from '../shared/pricing.js';
+import { dimensionsOf, type Dimension, type DimensionKind } from '../shared/pricing.js';
+import { publishedPricingFor } from './published-pricing.js';
 import { logger, metrics, MetricUnit } from '../shared/powertools.js';
 import { getConfiguredMemoryMb, recordSelfCost } from '../shared/self-cost.js';
 import {
@@ -82,6 +83,8 @@ interface SkuJson {
 }
 
 interface PriceRow {
+  videoRates?: Partial<Record<'HD' | 'Standard', Dimension>>;
+  websiteFallback?: boolean;
   inputPer1k?: number;
   outputPer1k?: number;
   cacheReadPer1k?: number;
@@ -224,7 +227,12 @@ const firstOnDemandPrice = (sku: SkuJson): { unit: string; price: number } | und
   if (!dim) return undefined;
   const price = Number(dim.pricePerUnit.USD ?? '0');
   if (!Number.isFinite(price)) return undefined;
-  return { unit: dim.unit, price };
+  // Nova Reel's USE1 SKUs say unit "video" but explicitly bill per second
+  // in the price dimension description. Never reinterpret other video units.
+  const unit = /NovaReel/.test(sku.product.attributes.usagetype ?? '')
+    && dim.unit === 'video' && /per secs|per seconds?/i.test(dim.description ?? '')
+    ? 'seconds' : dim.unit;
+  return { unit, price };
 };
 
 const ensureRegion = (table: RegionalPricing, region: string): PriceRow =>
@@ -329,52 +337,14 @@ const recordNonTokenPrice = (
 ): void => {
   const row = ensureRegion(table, region);
   recordRoutingVariant(row, kind, usagetype, { unit, pricePerUnit, label });
+  const rayResolution = (usagetype.match(/-Ray-V2-Medfps-(HD|Standard)Res$/i)?.[1]
+    ?? usagetype.match(/_videoMediumFps(Hd|Standard)Res-Units$/i)?.[1])?.toLowerCase();
+  if (kind === 'outputVideoSeconds' && (rayResolution === 'hd' || rayResolution === 'standard')) {
+    const resolution = rayResolution === 'hd' ? 'HD' : 'Standard';
+    (row.videoRates ??= {})[resolution] = { unit, pricePerUnit, label: `${resolution} video` };
+  }
   if (!claim(row, kind, skuPrecedence(usagetype), pricePerUnit)) return;
   row.dimensions[kind] = { unit, pricePerUnit, label };
-};
-
-/**
- * Stability AI ships many "feature" endpoints (erase-object, inpaint,
- * control-sketch, upscale, etc.) that don't have their own Pricing API
- * SKUs — per AWS docs they're billed at the parent generative model's
- * rate. Map known feature modelIds to their parent's servicename so the
- * refresher can populate pricing instead of leaving them as gaps.
- */
-const FEATURE_FALLBACK: Array<{ pattern: RegExp; parentServicename: string; note: string }> = [
-  // Stable Image edit / inpaint / outpaint / control / style features all
-  // bill at the Stable Image Ultra rate.
-  {
-    pattern: /^stability\.stable-image-(?:control|erase|inpaint|outpaint|remove-background|search|style-guide)/,
-    parentServicename: 'Stable Image Ultra (Amazon Bedrock Edition)',
-    note: 'Borrowed from Stable Image Ultra parent SKU (per AWS docs feature endpoints share parent pricing).',
-  },
-  {
-    pattern: /^stability\.stable-style-transfer/,
-    parentServicename: 'Stable Image Ultra (Amazon Bedrock Edition)',
-    note: 'Borrowed from Stable Image Ultra parent SKU.',
-  },
-  {
-    pattern: /^stability\.stable-outpaint/,
-    parentServicename: 'Stable Image Ultra (Amazon Bedrock Edition)',
-    note: 'Borrowed from Stable Image Ultra parent SKU.',
-  },
-  // Upscalers also share the Stable Image Ultra rate per AWS docs.
-  {
-    pattern: /^stability\.stable-(?:conservative|creative|fast)-upscale/,
-    parentServicename: 'Stable Image Ultra (Amazon Bedrock Edition)',
-    note: 'Borrowed from Stable Image Ultra parent SKU.',
-  },
-];
-
-export const featureFallbackFor = (
-  modelId: string,
-): { servicename: string; note: string } | undefined => {
-  for (const f of FEATURE_FALLBACK) {
-    if (f.pattern.test(modelId)) {
-      return { servicename: f.parentServicename, note: f.note };
-    }
-  }
-  return undefined;
 };
 
 /**
@@ -617,6 +587,9 @@ const getBulkOfferSkus = async (
  * vs thousands of throttled API calls).
  */
 const prewarmBulkOffers = async (): Promise<void> => {
+  // A warm Lambda may serve another refresh. Never stamp fetchedAt=now on
+  // yesterday's memoized offer (or preserve a previous download failure).
+  bulkOfferCache.clear();
   await Promise.all(
     METERED_REGIONS.flatMap((region) =>
       BULK_SERVICE_CODES.map((svc) => getBulkOfferSkus(svc, region)),
@@ -708,9 +681,9 @@ export const resolveModelPricing = async (
   // variant like "Mistral Large 3" → "Mistral Large" can't mis-join to a
   // different, 8x-pricier model; `claim()` + the offer filter both respect it).
   const aliasAb = MODEL_ALIASES[m.modelId]?.ab;
-  const ambNames = aliasAb
-    ? [aliasAb, ...modelNameVariants(m.modelName)]
-    : modelNameVariants(m.modelName);
+  const ambNames = [...new Set([
+    ...(aliasAb ? [aliasAb] : []), m.modelId, ...modelNameVariants(m.modelName),
+  ])];
   // AmazonBedrockFoundationModels `servicename` candidates ("… (Amazon Bedrock
   // Edition)"), same set the Query-API servicename walk tries.
   const fmServicenames = servicenameCandidates(m.modelName, m.providerName, m.modelId);
@@ -727,6 +700,23 @@ export const resolveModelPricing = async (
       });
     }
     if (pricedIn(region)) continue;
+
+    // Reviewed website fallback avoids thousands of unsuccessful Query calls.
+    // Bulk remains first so newly published official SKUs take precedence.
+    const published = publishedPricingFor(m.modelId);
+    if (published) {
+      const dims = dimensionsOf(published, region);
+      regional[region] = {
+        dimensions: dims, precedence: {}, websiteFallback: true,
+        inputPer1k: dims.inputTokens?.pricePerUnit,
+        outputPer1k: dims.outputTokens?.pricePerUnit,
+        cacheReadPer1k: dims.cacheReadTokens?.pricePerUnit,
+        cacheWritePer1k: dims.cacheWriteTokens?.pricePerUnit,
+        routing: Object.fromEntries(Object.entries(published.routingDimensions ?? {})
+          .map(([mode, dimensions]) => [mode, { dimensions, precedence: {} }])),
+      };
+      continue;
+    }
 
     // FALLBACK (Query API): the bulk files didn't price this model in this
     // region. Emit a metric so chronic reliance (offer files lagging the Query
@@ -785,7 +775,7 @@ const writePricingRow = async (
   modelId: string,
   modelName: string,
   providerName: string,
-  source: 'pricing-api' | 'pricing-api-historical' | 'pricing-api-feature-fallback',
+  source: 'pricing-api' | 'pricing-api-historical',
   regional: RegionalPricing,
   notes?: string,
 ): Promise<void> => {
@@ -808,6 +798,8 @@ const writePricingRow = async (
     string,
     { inputPer1k?: number; outputPer1k?: number; cacheReadPer1k?: number; cacheWritePer1k?: number }
   > = {};
+  const published = publishedPricingFor(modelId);
+  const usesWebsite = Object.values(regional).some((r) => r.websiteFallback);
 
   for (const [region, r] of Object.entries(regional)) {
     inputPer1k ??= r.inputPer1k;
@@ -834,7 +826,8 @@ const writePricingRow = async (
     }
   }
 
-  await ddb.send(
+  try {
+    await ddb.send(
     new PutCommand({
       TableName: PRICING_TABLE,
       Item: {
@@ -850,16 +843,36 @@ const writePricingRow = async (
         // Multi-dim schema.
         dimensions: topDimensions,
         regionDimensions,
+        ...(modelId === 'luma.ray-v2:0' ? {
+          videoOutputPricing: {
+            billingRule: 'luma-ray-v2',
+            regionRates: Object.fromEntries(Object.entries(regional)
+              .filter(([, r]) => r.videoRates).map(([region, r]) => [region, r.videoRates])),
+          },
+        } : {}),
         // Routing-mode rates (only written when a mode has entries — the
         // meter treats a missing map as "no routing-specific rate").
         ...(Object.keys(routingDimensions).length > 0 ? { routingDimensions } : {}),
-        source,
+        source: usesWebsite ? 'aws-website' : source,
+        ...(published && usesWebsite ? {
+          contextTiers: published.contextTiers,
+          sourceUrl: published.sourceUrl,
+          verifiedAt: published.verifiedAt,
+        } : {}),
+        ...(modelId === 'xai.grok-4.6' ? { serviceTierMultipliers: { priority: 1.75, flex: 0.5 } } : {}),
         notes,
         currency: 'USD',
         fetchedAt: new Date().toISOString(),
       },
+      ConditionExpression: 'attribute_not_exists(#source) OR #source <> :override',
+      ExpressionAttributeNames: { '#source': 'source' },
+      ExpressionAttributeValues: { ':override': 'override' },
     }),
-  );
+    );
+  } catch (err) {
+    if ((err as Error).name !== 'ConditionalCheckFailedException') throw err;
+    logger.info('Preserved operator pricing override', { modelId });
+  }
 };
 
 /**
@@ -900,12 +913,13 @@ export const computePricingRefreshAgeSeconds = async (
   liveModelIds: ReadonlySet<string>,
 ): Promise<number> => {
   let oldestFetchedAtMs: number | undefined;
+  let fallbackAge = 0;
   let cursor: Record<string, unknown> | undefined;
   do {
     const r = await ddb.send(
       new ScanCommand({
         TableName: PRICING_TABLE,
-        ProjectionExpression: '#m, fetchedAt, #s',
+        ProjectionExpression: '#m, fetchedAt, verifiedAt, #s',
         ExpressionAttributeNames: { '#m': 'model', '#s': 'source' },
         ExclusiveStartKey: cursor,
       }),
@@ -915,6 +929,11 @@ export const computePricingRefreshAgeSeconds = async (
       // Skip rows for models AWS no longer lists — a stale price on an
       // un-invocable model isn't a freshness gap. Also skips reserved rows.
       if (!model || !liveModelIds.has(model)) continue;
+      if (item.source === 'aws-website' || item.source === 'override') {
+        const reviewed = Date.parse(String(item.verifiedAt ?? item.fetchedAt ?? ''));
+        fallbackAge = Math.max(fallbackAge, Number.isFinite(reviewed)
+          ? Math.max(0, Math.floor((nowMs - reviewed) / 1000)) : 366 * 86400);
+      }
       // Skip manually-authored overrides — the refresher never rewrites them,
       // so their age measures human curation, not refresher health.
       if (item.source === 'override') continue;
@@ -927,6 +946,7 @@ export const computePricingRefreshAgeSeconds = async (
     cursor = r.LastEvaluatedKey as Record<string, unknown> | undefined;
   } while (cursor);
 
+  metrics.addMetric('PricingFallbackAge', MetricUnit.Seconds, fallbackAge);
   if (oldestFetchedAtMs === undefined) return 0;
   return Math.max(0, Math.floor((nowMs - oldestFetchedAtMs) / 1000));
 };
@@ -957,6 +977,7 @@ export const handler = async (
     context?.getRemainingTimeInMillis ? context.getRemainingTimeInMillis() : Number.POSITIVE_INFINITY;
 
   const allModels: FoundationModelSummary[] = [];
+  let discoveryFailures = 0;
   for (const region of METERED_REGIONS) {
     const bedrock = new BedrockClient({ region });
     try {
@@ -972,6 +993,7 @@ export const handler = async (
         }
       }
     } catch (err) {
+      discoveryFailures++;
       logger.warn(`ListFoundationModels failed in ${region}`, { err: (err as Error).message });
     }
   }
@@ -1027,55 +1049,7 @@ export const handler = async (
       continue;
     }
 
-    // Feature-fallback: Stability AI sub-feature endpoints don't have their
-    // own SKUs but bill at the parent generative model's rate.
-    const fallback = featureFallbackFor(m.modelId);
-    if (fallback) {
-      const fallbackTable: RegionalPricing = {};
-      for (const region of METERED_REGIONS) {
-        const skus = await fetchAllSkus('AmazonBedrockFoundationModels', [
-          { Type: 'TERM_MATCH', Field: 'servicename', Value: fallback.servicename },
-          { Type: 'TERM_MATCH', Field: 'regionCode', Value: region },
-        ]).catch(() => [] as SkuJson[]);
-        for (const sku of skus) {
-          // Forward-compat: same schema watch on the feature-fallback path
-          // since it also queries AmazonBedrockFoundationModels.
-          checkFoundationModelsSchema(sku, schemaWatch);
-          const usage = sku.product.attributes.usagetype;
-          if (!usage) continue;
-          const priced = firstOnDemandPrice(sku);
-          if (!priced) continue;
-          const tokenKind = classifyFoundationModelsUsage(usage);
-          if (tokenKind) {
-            const per1k = toPricePer1k(priced.price, 'AmazonBedrockFoundationModels');
-            recordTokenPrice(fallbackTable, region, tokenKind, per1k, usage);
-            continue;
-          }
-          const nonTokenKind = classifyNonTokenUsage(usage, priced.unit);
-          if (nonTokenKind) {
-            recordNonTokenPrice(fallbackTable, region, nonTokenKind, priced.unit, priced.price, usage);
-          }
-        }
-      }
-      const fallbackFound = Object.values(fallbackTable).some(
-        (r) => Object.keys(r.dimensions).length > 0,
-      );
-      if (fallbackFound) {
-        await writePricingRow(
-          m.modelId,
-          m.modelName,
-          m.providerName,
-          'pricing-api-feature-fallback',
-          fallbackTable,
-          fallback.note,
-        );
-        refreshed++;
-        continue;
-      }
-    }
-
     gaps.push(m.modelId);
-    metrics.addMetric('PricingGapCount', MetricUnit.Count, 1);
     logger.info('No pricing found across any dimension', { modelId: m.modelId, modelName: m.modelName });
   }
 
@@ -1113,7 +1087,9 @@ export const handler = async (
   metrics.addMetric('PricingRefreshAge', MetricUnit.Seconds, pricingRefreshAgeSeconds);
   // Emit a truncation signal so a run that hit the time budget is visible (and
   // alarmable) rather than silently under-refreshing. 0 on a complete run.
-  const incomplete = skipped > 0;
+  const incomplete = skipped > 0 || discoveryFailures > 0;
+  // One gauge per run, including zero. The alarm evaluates this daily.
+  metrics.addMetric('PricingGapCount', MetricUnit.Count, gaps.length);
   metrics.addMetric('PricingRefreshIncomplete', MetricUnit.Count, incomplete ? 1 : 0);
   metrics.addMetric('PricingModelsSkipped', MetricUnit.Count, skipped);
 

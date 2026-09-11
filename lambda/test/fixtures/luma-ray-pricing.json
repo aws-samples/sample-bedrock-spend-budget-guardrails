@@ -1,0 +1,74 @@
+[
+  {
+    "product": {
+      "sku": "B8WQQQUJRYPU7ZY7",
+      "attributes": {
+        "location": "US West (Oregon)",
+        "locationType": "AWS Region",
+        "usagetype": "USW2-MP:USW2_videoMediumFpsHdRes-Units",
+        "operation": "",
+        "regionCode": "us-west-2",
+        "servicename": "Luma Ray2 (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "B8WQQQUJRYPU7ZY7.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "B8WQQQUJRYPU7ZY7",
+          "effectiveDate": "2026-07-01T00:00:00Z",
+          "priceDimensions": {
+            "B8WQQQUJRYPU7ZY7.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "B8WQQQUJRYPU7ZY7.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-west-2|Luma Ray2",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "seconds",
+              "pricePerUnit": {
+                "USD": "1.5000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "NUQE4YNFZCPYCRJJ",
+      "attributes": {
+        "location": "US West (Oregon)",
+        "locationType": "AWS Region",
+        "usagetype": "USW2-MP:USW2_videoMediumFpsStandardRes-Units",
+        "operation": "",
+        "regionCode": "us-west-2",
+        "servicename": "Luma Ray2 (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "NUQE4YNFZCPYCRJJ.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "NUQE4YNFZCPYCRJJ",
+          "effectiveDate": "2026-07-01T00:00:00Z",
+          "priceDimensions": {
+            "NUQE4YNFZCPYCRJJ.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "NUQE4YNFZCPYCRJJ.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-west-2|Luma Ray2",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "seconds",
+              "pricePerUnit": {
+                "USD": "0.7500000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  }
+]

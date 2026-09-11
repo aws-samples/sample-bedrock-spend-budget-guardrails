@@ -55,6 +55,48 @@ beforeEach(() => {
 });
 
 describe('ledger-writer account attribution (display rule)', () => {
+  it('skips externally journaled repairs but journals the next normal update', async () => {
+    const prev = { ...baseRow, principal: 'principal#test' };
+    const corrected = { ...prev, spendUsd: 2.25, lastCorrectionId: 'repair-1',
+      lastCorrectionSuppressLedger: true, lastCorrectionEffectiveAt: '2026-07-01T00:00:00Z' };
+    const repair = await handler({ Records: [modifyRecord(corrected, prev)] } as DynamoDBStreamEvent);
+    expect(repair.written).toBe(0);
+    expect(s3Mock.commandCalls(PutObjectCommand)).toHaveLength(0);
+    const [line] = await writtenLines(modifyRecord({
+      ...corrected, spendUsd: 3.25, lastUpdated: '2026-07-11T01:00:00Z',
+    }, corrected));
+    expect(line.spendUsd).toBe(1);
+    expect(line.effectiveAt).toBe('2026-07-11T01:00:00Z');
+    expect(line).not.toHaveProperty('correctionId');
+  });
+  it('preserves unpriced media deltas and their usage timestamps', async () => {
+    const [line] = await writtenLines(modifyRecord({
+      principal: 'principal#arn:aws:iam::123456789012:role/Video',
+      sk: 'period#2026-09#target#model#luma.ray-v2:0', target: 'model#luma.ray-v2:0',
+      period: '2026-09', spendUsd: 0, inputTokens: 0, outputTokens: 0,
+      usage_outputVideoSeconds: 4.75, unpricedInvocations: 1,
+      lastUpdated: '2026-09-01T00:00:00Z', lastRequestId: 'video-1',
+    }));
+    expect(line.usage).toEqual({ outputVideoSeconds: 4.75 });
+    expect(line.unpricedInvocations).toBe(1);
+    expect(line.effectiveAt).toBe('2026-09-01T00:00:00Z');
+    expect(line.requestId).toBe('video-1');
+  });
+
+  it('uses a historical correction timestamp once without leaking it into subsequent usage', async () => {
+    const prev = { ...baseRow, principal: 'principal#test', lastUpdated: '2026-09-11T00:00:00Z' };
+    const corrected = { ...prev, spendUsd: 2.25, lastCorrectionId: 'repair-1',
+      lastCorrectionEffectiveAt: '2026-09-01T00:00:00Z' };
+    const [correction, normal] = await writtenLines(
+      modifyRecord(corrected, prev),
+      modifyRecord({ ...corrected, spendUsd: 3.25, lastUpdated: '2026-09-11T01:00:00Z' }, corrected),
+    );
+    expect(correction.spendUsd).toBe(1);
+    expect(correction.effectiveAt).toBe('2026-09-01T00:00:00Z');
+    expect(correction.correctionId).toBe('repair-1');
+    expect(normal.effectiveAt).toBe('2026-09-11T01:00:00Z');
+    expect(normal).not.toHaveProperty('correctionId');
+  });
   it('derives the account id from an iam principal ARN', async () => {
     const [line] = await writtenLines(
       modifyRecord({ ...baseRow, principal: 'principal#arn:aws:iam::123456789012:user/alice' }),

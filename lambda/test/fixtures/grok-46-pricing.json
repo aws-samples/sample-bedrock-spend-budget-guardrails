@@ -1,0 +1,266 @@
+[
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-output-tokens-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "output_tokens_mantle",
+        "operation": ""
+      },
+      "sku": "4NPVARQ2PV52GKA5"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "4NPVARQ2PV52GKA5.JRTCKXETXF": {
+          "priceDimensions": {
+            "4NPVARQ2PV52GKA5.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.0066 per 1K token for xai.grok-4.6-mantle-output-tokens-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "4NPVARQ2PV52GKA5.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0066000000"
+              }
+            }
+          },
+          "sku": "4NPVARQ2PV52GKA5",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-input-tokens-global-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "global-standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "input_tokens_mantle",
+        "operation": ""
+      },
+      "sku": "52N8MSMVG6VCJNYC"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "52N8MSMVG6VCJNYC.JRTCKXETXF": {
+          "priceDimensions": {
+            "52N8MSMVG6VCJNYC.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.002 per 1K token for xai.grok-4.6-mantle-input-tokens-global-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "52N8MSMVG6VCJNYC.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0020000000"
+              }
+            }
+          },
+          "sku": "52N8MSMVG6VCJNYC",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-cache-read-tokens-global-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "global-standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "Cache Read Input Tokens",
+        "operation": ""
+      },
+      "sku": "EGRFJP567AQ4V7QP"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "EGRFJP567AQ4V7QP.JRTCKXETXF": {
+          "priceDimensions": {
+            "EGRFJP567AQ4V7QP.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.0005 per 1K token for xai.grok-4.6-mantle-cache-read-tokens-global-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "EGRFJP567AQ4V7QP.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0005000000"
+              }
+            }
+          },
+          "sku": "EGRFJP567AQ4V7QP",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-cache-read-tokens-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "Cache Read Input Tokens",
+        "operation": ""
+      },
+      "sku": "HPYRKXF8AJN8HEWT"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "HPYRKXF8AJN8HEWT.JRTCKXETXF": {
+          "priceDimensions": {
+            "HPYRKXF8AJN8HEWT.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.00055 per 1K token for xai.grok-4.6-mantle-cache-read-tokens-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "HPYRKXF8AJN8HEWT.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0005500000"
+              }
+            }
+          },
+          "sku": "HPYRKXF8AJN8HEWT",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-input-tokens-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "input_tokens_mantle",
+        "operation": ""
+      },
+      "sku": "QSA3QSGVYYU258F4"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "QSA3QSGVYYU258F4.JRTCKXETXF": {
+          "priceDimensions": {
+            "QSA3QSGVYYU258F4.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.0022 per 1K token for xai.grok-4.6-mantle-input-tokens-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "QSA3QSGVYYU258F4.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0022000000"
+              }
+            }
+          },
+          "sku": "QSA3QSGVYYU258F4",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "servicecode": "AmazonBedrock",
+        "usagetype": "USE1-xai.grok-4.6-mantle-output-tokens-global-standard",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "xai.grok-4.6",
+        "service_tier": "global-standard",
+        "servicename": "Amazon Bedrock",
+        "tokenType": "output_tokens_mantle",
+        "operation": ""
+      },
+      "sku": "TC5CN7R5FGUXXRE5"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "TC5CN7R5FGUXXRE5.JRTCKXETXF": {
+          "priceDimensions": {
+            "TC5CN7R5FGUXXRE5.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "1K tokens",
+              "endRange": "Inf",
+              "description": "$0.006 per 1K token for xai.grok-4.6-mantle-output-tokens-global-standard in US East (N. Virginia)",
+              "appliesTo": [],
+              "rateCode": "TC5CN7R5FGUXXRE5.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0060000000"
+              }
+            }
+          },
+          "sku": "TC5CN7R5FGUXXRE5",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  }
+]

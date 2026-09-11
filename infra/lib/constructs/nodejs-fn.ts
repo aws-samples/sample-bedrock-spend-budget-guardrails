@@ -54,6 +54,10 @@ export class BbgNodejsFunction extends nodejs.NodejsFunction {
         ],
       },
       ...rest,
+      environment: {
+        STAGE_PREFIX: rest.functionName?.split('-bbg-')[0] ?? 'unknown',
+        ...rest.environment,
+      },
     });
   }
 }

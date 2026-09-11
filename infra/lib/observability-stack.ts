@@ -42,7 +42,7 @@ export class ObservabilityStack extends cdk.Stack {
     // emitted with extra dimensions (principal, policyArn, Lambda, …) we use a
     // metric-math SEARCH expression below to aggregate across the high-card
     // dimension while still scoping by service.
-    const serviceDim = { service: 'bbg' };
+    const serviceDim = { service: 'bbg', stage: stagePrefix };
     const meterUnjoined = new cloudwatch.Metric({ namespace, metricName: 'MeterUnjoined', dimensionsMap: serviceDim });
     // MET-1 (F5): the cross-region cwl-forwarder emits CwlForwardFailed for
     // every EventBridge entry PutEvents reported as failed (non-zero
@@ -144,6 +144,14 @@ export class ObservabilityStack extends cdk.Stack {
       dimensionsMap: { ...serviceDim, stage: stagePrefix },
       statistic: 'Maximum',
       period: cdk.Duration.days(1),
+    });
+    const reconciliationUnattributed = new cloudwatch.Metric({
+      namespace,
+      metricName: 'ReconciliationUnattributedSpend',
+      dimensionsMap: { ...serviceDim, stage: stagePrefix },
+      statistic: 'Maximum',
+      period: cdk.Duration.days(1),
+      label: 'CUR spend without caller attribution',
     });
     // High-cardinality emitters (enforcement attach failures, rollover detach/
     // delete failures) emit two flavors per failure: one with the principal
@@ -321,12 +329,12 @@ export class ObservabilityStack extends cdk.Stack {
           namespace,
           metricName: 'PricingGapCount',
           statistic: 'Maximum',
-          period: cdk.Duration.hours(1),
+          period: cdk.Duration.days(1),
           dimensionsMap: serviceDim,
         }),
         threshold: 0,
         comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        evaluationPeriods: 4, // 4 consecutive 1-hour periods so transient gaps don't page
+        evaluationPeriods: 1, // one daily refresh with a coverage gap
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         alarmDescription:
           'A Bedrock model is in ListFoundationModels but has no Pricing API match. Meter emits UnpricedInvocations for any caller using it. Operator: add a manual override via the Pricing UI or wait for the next refresh. See docs/runbooks/alarms/pricing-gap-count.md.',
@@ -346,6 +354,30 @@ export class ObservabilityStack extends cdk.Stack {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         alarmDescription:
           'Meter received Bedrock invocations it could not price. Token counts recorded; dollar amount missing. Operator: check pricing-refresher logs and the gap surface in the SPA. See docs/runbooks/alarms/unpriced-invocations.md.',
+      }),
+      new cloudwatch.Alarm(this, 'MeterUsageMissingAlarm', {
+        alarmName: `${stagePrefix}-bbg-meter-usage-missing`,
+        metric: new cloudwatch.Metric({
+          namespace, metricName: 'MeterUsageMissing', dimensionsMap: serviceDim,
+          statistic: 'Sum', period: cdk.Duration.minutes(15),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        alarmDescription: 'Invocation metadata has no supported usage counters. Inspect model and operation in meter logs; zero-valued streaming start records are excluded.',
+      }),
+      new cloudwatch.Alarm(this, 'PricingFallbackAgeAlarm', {
+        alarmName: `${stagePrefix}-bbg-pricing-fallback-age`,
+        metric: new cloudwatch.Metric({
+          namespace, metricName: 'PricingFallbackAge', dimensionsMap: serviceDim,
+          statistic: 'Maximum', period: cdk.Duration.days(1),
+        }),
+        threshold: 30 * 86400,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        alarmDescription: 'A live website fallback or manual override has not been reviewed for 30 days. Verify its source, rates, routing, and context tiers.',
       }),
     ];
 
@@ -450,7 +482,7 @@ export class ObservabilityStack extends cdk.Stack {
           evaluationPeriods: 3,
           treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
           alarmDescription:
-            'CUR-vs-meter reconciliation drift exceeded $1 per principal for 3 consecutive days. Both sides are watermarked to bill-complete days (default now-72h; Marketplace-billed model SKUs settle slower than the base 8-24h CUR lag), so this is NOT CUR ingestion lag: the meter and the bill genuinely disagree about spend the meter DID see (dropped log/event, identity-join miss, or stale pricing) and enforcement may be mis-firing. CUR-only spend the stage never metered is excluded — see the ReconciliationUnmeteredSpend metric for that. Cross-check ReconciliationDeltaUsd per-principal and MeterUnjoined. See docs/runbooks/alarms/reconciliation-delta.md.',
+            'CUR-vs-meter reconciliation drift exceeded $1 per principal for 3 consecutive days. Both sides are watermarked to bill-complete days (default now-72h; Marketplace-billed model SKUs settle slower than the base 8-24h CUR lag), but the watermark does not guarantee every model has billing records. Confirm CUR model coverage, then investigate dropped usage, identity joins, or stale pricing; budget estimates may differ from available charges. CUR-only spend the stage never metered is excluded — see the ReconciliationUnmeteredSpend metric for that. Cross-check ReconciliationDeltaUsd per-principal and MeterUnjoined. See docs/runbooks/alarms/reconciliation-delta.md.',
         }),
       );
     }
@@ -575,7 +607,7 @@ exports.handler = async () => {
           new cloudwatch.GraphWidget({
             title: 'CUR reconciliation',
             left: [reconciliationDelta],
-            right: [reconciliationUnmetered],
+            right: [reconciliationUnmetered, reconciliationUnattributed],
             width: 12,
           }),
         ],

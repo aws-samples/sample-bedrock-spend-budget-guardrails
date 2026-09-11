@@ -18,6 +18,8 @@
  * from them.
  */
 
+import type { VideoBilling } from './video-billing.js';
+
 export type DimensionKind =
   | 'inputTokens'
   | 'outputTokens'
@@ -47,6 +49,20 @@ export interface Dimension {
 }
 
 export interface PricingRow {
+  /** Resolution variants from Ray v2 SKUs; missing metadata must not pick the cheapest. */
+  videoOutputPricing?: {
+    billingRule: 'luma-ray-v2';
+    regionRates: Record<string, Partial<Record<'HD' | 'Standard', Dimension>>>;
+  };
+  /** Rates for the whole request when input + cached input exceeds a boundary. */
+  contextTiers?: Array<{
+    minInputTokens: number;
+    dimensions: Partial<Record<DimensionKind, Dimension>>;
+    regionDimensions?: Record<string, Partial<Record<DimensionKind, Dimension>>>;
+    routingDimensions?: Record<string, Partial<Record<DimensionKind, Dimension>>>;
+  }>;
+  /** Explicitly supported service tiers. An unknown tier is not silently priced. */
+  serviceTierMultipliers?: Record<string, number>;
   /** Top-level dimensions discovered by the refresher (or set via override). */
   dimensions?: Partial<Record<DimensionKind, Dimension>>;
   /** Per-region overrides; missing keys fall back to top-level `dimensions`. */
@@ -119,6 +135,7 @@ export const dimensionsOf = (
   row: PricingRow | undefined,
   region: string,
   routing?: string,
+  usage?: UsageCounts,
 ): Partial<Record<DimensionKind, Dimension>> => {
   if (!row) return {};
 
@@ -149,6 +166,15 @@ export const dimensionsOf = (
   if (merged.cacheWriteTokens === undefined && cacheWriteRate !== undefined) {
     merged.cacheWriteTokens = { unit: '1K tokens', pricePerUnit: cacheWriteRate, label: 'Cache write tokens' };
   }
+  const promptTokens = (usage?.inputTokens ?? 0) + (usage?.cacheReadTokens ?? 0)
+    + (usage?.cacheWriteTokens ?? 0);
+  const tier = row.contextTiers
+    ?.filter((t) => promptTokens >= t.minInputTokens)
+    .sort((a, b) => b.minInputTokens - a.minInputTokens)[0];
+  if (tier) {
+    Object.assign(merged, tier.dimensions, tier.regionDimensions?.[region],
+      routing ? tier.routingDimensions?.[routing] : undefined);
+  }
   return merged;
 };
 
@@ -172,11 +198,13 @@ export interface CostBreakdown {
   /** Per-dimension usage counts (echoed back so callers can persist them). */
   dimensionsUsage: Partial<Record<DimensionKind, number>>;
   /**
-   * `true` iff at least one usage field had a matching priced dimension.
-   * `false` for unpriced models (alarms via `bbg.UnpricedInvocations`).
+   * `true` iff every observed usage dimension has a valid rate.
+   * `false` for wholly or partially unpriced invocations.
    * Also `false` if no usage fields were non-zero.
    */
   priced: boolean;
+  /** Every observed dimension that could not be priced, including partial gaps. */
+  missingDimensions: DimensionKind[];
 }
 
 /**
@@ -187,8 +215,7 @@ export interface CostBreakdown {
  *     priced dimension (those become "unpriced" — counts towards the
  *     UnpricedInvocations metric).
  *   - For tokens-as-dimensions, divide count by 1000 before multiplying.
- *   - `priced` is true iff at least one (count, dimension) pair contributed
- *     to spend.
+ *   - `priced` is true iff every observed dimension has a rate.
  */
 export const computeCost = (
   pricing: PricingRow | undefined,
@@ -210,8 +237,21 @@ export const computeCost = (
    * or an unlisted mode falls back to regional/default dimensions.
    */
   routing?: string,
+  serviceTier = 'default',
+  videoBilling?: VideoBilling,
 ): CostBreakdown => {
-  const dims = dimensionsOf(pricing, region, routing);
+  const dims = dimensionsOf(pricing, region, routing, usage);
+  if (pricing?.videoOutputPricing) {
+    const rate = videoBilling?.resolution
+      ? pricing.videoOutputPricing.regionRates[region]?.[videoBilling.resolution] : undefined;
+    if (rate && Number.isFinite(videoBilling?.billedSeconds) && videoBilling!.billedSeconds! > 0) {
+      dims.outputVideoSeconds = rate;
+    } else {
+      delete dims.outputVideoSeconds;
+    }
+  }
+  const tierFactor = serviceTier === 'default' || serviceTier === 'standard'
+    ? 1 : pricing?.serviceTierMultipliers?.[serviceTier];
   // Clamp defensively — the config write-path validates 0–100, but a bad
   // stored value must never produce a negative or >list charge.
   const factor =
@@ -219,28 +259,28 @@ export const computeCost = (
   const dimensionsCost: Partial<Record<DimensionKind, number>> = {};
   const dimensionsUsage: Partial<Record<DimensionKind, number>> = {};
   let total = 0;
-  let priced = false;
   let anyUsage = false;
-  let anyMissing = false;
+  const missingDimensions: DimensionKind[] = [];
 
   const consider = (kind: DimensionKind, count: number | undefined): void => {
     if (count === undefined || count <= 0) return;
     anyUsage = true;
     dimensionsUsage[kind] = count;
     const dim = dims[kind];
-    if (!dim) {
-      anyMissing = true;
+    if (!dim || tierFactor === undefined || !Number.isFinite(dim.pricePerUnit) || dim.pricePerUnit < 0) {
+      missingDimensions.push(kind);
       return;
     }
     // `priced` reflects that the model HAD a rate for this dimension —
     // computed pre-discount so a 100% discount (factor 0) doesn't
     // masquerade as "unpriced" and trip the UnpricedInvocations alarm.
-    const listCost = costOfDimension(kind, count, dim);
+    const billableCount = kind === 'outputVideoSeconds' && pricing?.videoOutputPricing
+      ? videoBilling!.billedSeconds! : count;
+    const listCost = costOfDimension(kind, billableCount, dim);
     if (listCost > 0) {
-      const c = listCost * factor;
+      const c = listCost * factor * tierFactor;
       dimensionsCost[kind] = c;
       total += c;
-      priced = true;
     }
   };
 
@@ -260,9 +300,8 @@ export const computeCost = (
     spendUsd: Number(total.toFixed(6)),
     dimensionsCost,
     dimensionsUsage,
-    // priced=false means EITHER the model had no priced dimensions for any
-    // observed usage, OR no usage was recorded. anyMissing distinguishes the
-    // first case so the meter can emit UnpricedInvocations correctly.
-    priced: priced || (anyUsage && !anyMissing),
+    // Partial gaps remain visible even when other dimensions have prices.
+    priced: anyUsage && missingDimensions.length === 0,
+    missingDimensions,
   };
 };

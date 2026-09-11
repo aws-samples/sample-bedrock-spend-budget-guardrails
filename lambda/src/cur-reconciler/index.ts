@@ -8,9 +8,9 @@ import {
   CloudWatchClient,
   PutMetricDataCommand,
 } from '@aws-sdk/client-cloudwatch';
-import { canonicalizeCurPrincipal } from '../shared/arn.js';
 import { periodFor } from '../shared/ddb.js';
 import { logger, metrics, MetricUnit } from '../shared/powertools.js';
+import { reconciliationTotals, type SpendRow } from './totals.js';
 
 const ATHENA_WORKGROUP = process.env.ATHENA_WORKGROUP!;
 const STAGE_PREFIX = process.env.STAGE_PREFIX ?? 'unknown';
@@ -48,9 +48,9 @@ const SAFE_PERIOD = /^\d{4}-\d{2}$/;
  * spend for any active principal — which is exactly the false positive that
  * kept the reconciliation alarm red. Both sides of the comparison are
  * therefore windowed to end at `now - RECONCILE_WATERMARK_HOURS` (default
- * 72h): every usage row on either side of the join is bill-complete, so a
- * non-zero delta means a REAL discrepancy (meter bug, bypass path, or pricing
- * drift), not ingestion latency.
+ * 72h). This reduces ordinary reporting latency but does not guarantee model
+ * billing coverage. A non-zero delta needs investigation of both the estimate
+ * and available charges, including missing billing rows or caller attribution.
  *
  * Why 72 and not 48: Marketplace-billed model SKUs (the entire Anthropic
  * Claude lineup bills via AmazonBedrockFoundationModels) were observed
@@ -109,13 +109,13 @@ const startCurQuery = async (period: string, watermarkIso: string): Promise<stri
   // unbindable identifier positions, keep the allowlist — never interpolate an
   // unvalidated value into an Athena query.
   return runQuery(
-    `SELECT ${CANONICAL_PRINCIPAL_SQL} AS principal, sum(line_item_unblended_cost) AS cur_spend
+    `SELECT ${CANONICAL_PRINCIPAL_SQL} AS principal, sum(line_item_unblended_cost) AS cur_spend,
+            line_item_resource_id AS target, line_item_usage_account_id AS account
          FROM ${CUR_DATABASE}.${CUR_TABLE}
          WHERE bill_billing_period_start_date >= CAST(? AS TIMESTAMP)
            AND line_item_usage_start_date < CAST(? AS TIMESTAMP)
            AND product_servicecode IN ('AmazonBedrock', 'AmazonBedrockFoundationModels', 'AmazonBedrockService')
-           AND line_item_iam_principal IS NOT NULL
-         GROUP BY ${CANONICAL_PRINCIPAL_SQL}`,
+         GROUP BY ${CANONICAL_PRINCIPAL_SQL}, line_item_resource_id, line_item_usage_account_id`,
     [`'${period}-01 00:00:00'`, `'${athenaTimestamp(watermarkIso)}'`],
   );
 };
@@ -140,12 +140,12 @@ const startCurQuery = async (period: string, watermarkIso: string): Promise<stri
  */
 const startLedgerQuery = async (period: string, watermarkIso: string): Promise<string> => {
   return runQuery(
-    `SELECT principal, sum(spendusd) AS meter_spend
+    `SELECT principal, sum(spendusd) AS meter_spend, target, account
          FROM ${LEDGER_DATABASE}.${LEDGER_TABLE}
          WHERE period = ?
-           AND recordedat < ?
+           AND coalesce(effectiveat, recordedat) < ?
            AND target LIKE 'model#%'
-         GROUP BY principal`,
+         GROUP BY principal, target, account`,
     [`'${period}'`, `'${watermarkIso}'`],
   );
 };
@@ -165,9 +165,8 @@ const waitFor = async (id: string): Promise<void> => {
 
 const fetchResults = async (
   id: string,
-  canonicalizeKeys: boolean,
-): Promise<Map<string, number>> => {
-  const result = new Map<string, number>();
+): Promise<SpendRow[]> => {
+  const result: SpendRow[] = [];
   // Paginate GetQueryResults — one page holds at most 1000 rows, so at any org
   // with >999 distinct metered principals an unpaginated read silently drops
   // the tail and the reconciler under-reports drift. The header row is only
@@ -181,15 +180,11 @@ const fetchResults = async (
     const rows = r.ResultSet?.Rows ?? [];
     for (const row of firstPage ? rows.slice(1) : rows) {
       const principal = row.Data?.[0]?.VarCharValue;
-      const spend = Number(row.Data?.[1]?.VarCharValue ?? '0');
-      if (!principal) continue;
-      // CUR rows need the canonical `principal#<arn>` key shape the ledger
-      // already uses. Belt-and-suspenders: the SQL GROUP BY already
-      // canonicalizes assumed-role forms, but the in-process canonicalizer
-      // covers any edge case the regex missed (e.g., future ARN shapes) and
-      // aggregates per-canonical-key here.
-      const key = canonicalizeKeys ? `principal#${canonicalizeCurPrincipal(principal)}` : principal;
-      result.set(key, (result.get(key) ?? 0) + spend);
+      const spend = Number(row.Data?.[1]?.VarCharValue);
+      if (!Number.isFinite(spend)) throw new Error('Invalid spend in Athena result');
+      result.push({
+        principal, spend, target: row.Data?.[2]?.VarCharValue, account: row.Data?.[3]?.VarCharValue,
+      });
     }
     nextToken = r.NextToken;
     firstPage = false;
@@ -222,6 +217,8 @@ export const handler = async (
 
   let curTotals: Map<string, number>;
   let meterTotals: Map<string, number>;
+  let unattributedSpend: number;
+  let pooledModels: string[];
   try {
     // Both queries run in the same workgroup; start them together and wait.
     const [curId, ledgerId] = await Promise.all([
@@ -229,10 +226,8 @@ export const handler = async (
       startLedgerQuery(period, watermark),
     ]);
     await Promise.all([waitFor(curId), waitFor(ledgerId)]);
-    [curTotals, meterTotals] = await Promise.all([
-      fetchResults(curId, true),
-      fetchResults(ledgerId, false),
-    ]);
+    const [cur, ledger] = await Promise.all([fetchResults(curId), fetchResults(ledgerId)]);
+    ({ curTotals, meterTotals, unattributedSpend, pooledModels } = reconciliationTotals(cur, ledger));
   } catch (err) {
     logger.warn('CUR/ledger query failed; reconciliation skipped', {
       err: (err as Error).message,
@@ -266,6 +261,12 @@ export const handler = async (
     metrics.addMetric('ReconciliationDelta', MetricUnit.NoUnit, delta);
   }
   metrics.addMetric('ReconciliationUnmeteredSpend', MetricUnit.NoUnit, unmeteredSpend);
+  metrics.addMetric('ReconciliationUnattributedSpend', MetricUnit.NoUnit, unattributedSpend);
+  if (unattributedSpend !== 0 || pooledModels.length > 0) {
+    logger.info('CUR caller attribution unavailable; account/model comparison used where possible', {
+      period, watermark, unattributedSpend, pooledModels,
+    });
+  }
 
   if (unmetered.length > 0) {
     logger.info('CUR spend with no meter counterpart (unmetered)', {

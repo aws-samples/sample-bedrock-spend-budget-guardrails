@@ -1,0 +1,90 @@
+[
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "inferenceType": "T2V Medium fps HD Resolution",
+        "servicecode": "AmazonBedrock",
+        "feature": "On-demand Inference",
+        "usagetype": "USE1-NovaReel-T2V-Medfps-HDRes",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "Nova Reel",
+        "servicename": "Amazon Bedrock",
+        "operation": ""
+      },
+      "sku": "GD75WHG8XCGESZ8A"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "GD75WHG8XCGESZ8A.JRTCKXETXF": {
+          "priceDimensions": {
+            "GD75WHG8XCGESZ8A.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "video",
+              "endRange": "Inf",
+              "description": "0.08 USD per secs of Nova Reel in us-east-1",
+              "appliesTo": [],
+              "rateCode": "GD75WHG8XCGESZ8A.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0800000000"
+              }
+            }
+          },
+          "sku": "GD75WHG8XCGESZ8A",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  },
+  {
+    "product": {
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "regionCode": "us-east-1",
+        "inferenceType": "I2V Medium fps HD Resolution",
+        "servicecode": "AmazonBedrock",
+        "feature": "On-demand Inference",
+        "usagetype": "USE1-NovaReel-I2V-Medfps-HDRes",
+        "locationType": "AWS Region",
+        "location": "US East (N. Virginia)",
+        "model": "Nova Reel",
+        "servicename": "Amazon Bedrock",
+        "operation": ""
+      },
+      "sku": "MZVUYCDTABPBDX5B"
+    },
+    "serviceCode": "AmazonBedrock",
+    "terms": {
+      "OnDemand": {
+        "MZVUYCDTABPBDX5B.JRTCKXETXF": {
+          "priceDimensions": {
+            "MZVUYCDTABPBDX5B.JRTCKXETXF.6YS6EN2CT7": {
+              "unit": "video",
+              "endRange": "Inf",
+              "description": "0.08 USD per secs of Nova Reel in us-east-1",
+              "appliesTo": [],
+              "rateCode": "MZVUYCDTABPBDX5B.JRTCKXETXF.6YS6EN2CT7",
+              "beginRange": "0",
+              "pricePerUnit": {
+                "USD": "0.0800000000"
+              }
+            }
+          },
+          "sku": "MZVUYCDTABPBDX5B",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "offerTermCode": "JRTCKXETXF",
+          "termAttributes": {}
+        }
+      }
+    },
+    "version": "20260901205051",
+    "publicationDate": "2026-09-01T20:50:51Z"
+  }
+]

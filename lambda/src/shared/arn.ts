@@ -157,7 +157,7 @@ export const canonicalizeCurPrincipal = (raw: string): string => {
  * key (`model#<bare>`) so budgets are per-model regardless of routing.
  */
 export const stripCrisPrefix = (modelId: string): string =>
-  modelId.replace(/^(us|eu|apac|ap|global)\./, '');
+  modelId.replace(/^(us|eu|apac|ap|in|global)\./, '');
 
 /**
  * Extracts the inference routing mode from a (possibly prefixed) Bedrock
@@ -170,4 +170,4 @@ export const stripCrisPrefix = (modelId: string): string =>
  * dimensions, so passing `us`/`eu` through costs nothing.
  */
 export const routingModeOf = (modelId: string): string | undefined =>
-  /^(us|eu|apac|ap|global)\./.exec(modelId)?.[1];
+  /^(us|eu|apac|ap|in|global)\./.exec(modelId)?.[1];

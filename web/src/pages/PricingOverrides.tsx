@@ -78,6 +78,8 @@ interface DimensionDef {
 }
 
 interface PricingRow {
+  contextTiers?: Array<{ minInputTokens: number }>;
+  routingDimensions?: Record<string, unknown>;
   model: string;
   displayName?: string;
   provider?: string;
@@ -94,6 +96,8 @@ const sourceIndicator = (source: unknown) => {
   switch (source) {
     case 'pricing-api':
       return <StatusIndicator type="success">pricing-api</StatusIndicator>;
+    case 'aws-website':
+      return <StatusIndicator type="info">AWS website</StatusIndicator>;
     case 'pricing-api-feature-fallback':
       return <StatusIndicator type="info">feature-fallback</StatusIndicator>;
     case 'bulk-api':
@@ -147,6 +151,8 @@ const hydrateRow = (it: Record<string, unknown>): PricingRow => {
     cacheReadPer1k: numberOrUndef(it.cacheReadPer1k),
     cacheWritePer1k: numberOrUndef(it.cacheWritePer1k),
     source: typeof it.source === 'string' ? it.source : undefined,
+    contextTiers: it.contextTiers as PricingRow['contextTiers'],
+    routingDimensions: it.routingDimensions as PricingRow['routingDimensions'],
     dimensions: {},
   };
   const raw = it.dimensions as Record<string, Record<string, unknown>> | undefined;
@@ -459,6 +465,13 @@ export const PricingOverrides = ({ config }: { config: BbgConfig }) => {
                       {DIMENSION_LABEL[kind]}: {fmtPrice(dim.pricePerUnit)} / {dim.unit}
                     </Badge>
                   ))}
+                  {(r.contextTiers?.length || Object.keys(r.routingDimensions ?? {}).length > 0) && (
+                    <Box variant="small">
+                      Base rates shown; routing
+                      {r.contextTiers?.length ? ` and context above ${(r.contextTiers[0].minInputTokens - 1).toLocaleString()} input tokens` : ''}
+                      {' '}can change the rate.
+                    </Box>
+                  )}
                 </SpaceBetween>
               );
             },
@@ -498,6 +511,9 @@ export const PricingOverrides = ({ config }: { config: BbgConfig }) => {
         >
           <Form>
             <SpaceBetween direction="vertical" size="m">
+              {(editing.row?.contextTiers?.length || Object.keys(editing.row?.routingDimensions ?? {}).length > 0) && (
+                <Box>Editing base rates. Existing routing and long-context rates are preserved.</Box>
+              )}
               <FormField
                 label="Model ID"
                 description="The Bedrock modelId, e.g. anthropic.claude-3-5-sonnet-20240620-v1:0"

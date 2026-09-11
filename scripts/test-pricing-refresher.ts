@@ -17,7 +17,8 @@
  *   tsx scripts/test-pricing-refresher.ts --all --json    # machine-readable {modelId: {region: rates}}
  */
 import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
-import { resolveModelPricing, featureFallbackFor, type RegionalPricing } from '../lambda/src/pricing-refresher';
+import { publishedPricingFor } from '../lambda/src/pricing-refresher/published-pricing';
+import { resolveModelPricing, type RegionalPricing } from '../lambda/src/pricing-refresher';
 import type { FoundationModelSummary } from '../lambda/src/pricing-refresher/cross-ref';
 
 const METERED_REGIONS = (process.env.METERED_REGIONS ?? 'us-east-1,us-east-2,us-west-2')
@@ -95,7 +96,7 @@ const main = async (): Promise<void> => {
     const rates = ratesOf(regional);
     if (Object.keys(rates).length > 0) {
       resolved[m.modelId] = rates;
-    } else if (featureFallbackFor(m.modelId)) {
+    } else if (publishedPricingFor(m.modelId)) {
       // The handler prices these via the parent servicename (verified to
       // resolve for all current feature-fallback models); not a gap.
       viaFeatureFallback.push(m.modelId);

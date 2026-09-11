@@ -269,6 +269,7 @@ export const classifyNonTokenUsage = (
   // captured — their unit isn't the bare word "image".
   if (unit && /image/i.test(unit)) return 'outputImages';
   if (unit && /^second/i.test(unit) && /Video/i.test(usagetype)) return 'outputVideoSeconds';
+  if (unit === 'seconds' && /NovaReel/.test(usagetype)) return 'outputVideoSeconds';
   if (unit && /search\s*unit/i.test(unit)) return 'searchUnits';
 
   return null;

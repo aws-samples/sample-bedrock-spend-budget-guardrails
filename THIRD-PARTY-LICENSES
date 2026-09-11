@@ -10,18 +10,18 @@ with scripts/gen-third-party-licenses.mjs after dependency changes.
 
 ## License summary
 
-- MIT: 219
+- MIT: 217
 - Apache-2.0: 111
 - BSD-3-Clause: 16
 - ISC: 10
 - MIT-0: 5
 - BSD-2-Clause: 5
-- MPL-2.0: 3
+- MPL-2.0: 2
 - (MIT OR GPL-3.0-or-later): 1
 - BlueOak-1.0.0: 1
 - 0BSD: 1
 
-Total third-party packages: 372
+Total third-party packages: 369
 
 ## Packages
 
@@ -76,7 +76,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/aws-amplify/amplify-js
 
-### @aws-cdk/asset-awscli-v1 2.2.282
+### @aws-cdk/asset-awscli-v1 2.2.292
 - License: Apache-2.0
 - Source: https://github.com/cdklabs/awscdk-asset-awscli
 
@@ -316,7 +316,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-sdk-js-v3
 
-### @aws/cloudformation-validate 1.6.0-beta
+### @aws/cloudformation-validate 1.9.0-beta
 - License: Apache-2.0
 - Source: https://github.com/aws-cloudformation/cloudformation-validate
 
@@ -436,7 +436,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/clauderic/dnd-kit
 
-### @esbuild/linux-x64 0.28.1
+### @esbuild/darwin-arm64 0.28.1
 - License: MIT
 - Source: https://github.com/evanw/esbuild
 
@@ -460,7 +460,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: formatjs/formatjs
 
-### @jridgewell/sourcemap-codec 1.5.5
+### @jridgewell/sourcemap-codec 1.6.0
 - License: MIT
 - Source: https://github.com/jridgewell/sourcemaps
 
@@ -488,27 +488,15 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/material-foundation/material-color-utilities
 
-### @napi-rs/wasm-runtime 1.2.2
-- License: MIT
-- Source: https://github.com/napi-rs/napi-rs
-
 ### @nodable/entities 3.0.0
 - License: MIT
 - Source: https://github.com/nodable/val-parsers
 
-### @oxc-project/types 0.142.0
+### @oxc-project/types 0.149.0
 - License: MIT
 - Source: https://github.com/oxc-project/oxc
 
-### @rolldown/binding-linux-x64-gnu 1.2.1
-- License: MIT
-- Source: https://github.com/rolldown/rolldown
-
-### @rolldown/binding-linux-x64-musl 1.2.1
-- License: MIT
-- Source: https://github.com/rolldown/rolldown
-
-### @rolldown/binding-wasm32-wasi 1.2.1
+### @rolldown/binding-darwin-arm64 1.2.8
 - License: MIT
 - Source: https://github.com/rolldown/rolldown
 
@@ -532,7 +520,7 @@ Total third-party packages: 372
 - License: BSD-3-Clause
 - Source: https://github.com/sinonjs/samsam
 
-### @smithy/core 3.31.1
+### @smithy/core 3.33.3
 - License: Apache-2.0
 - Source: https://github.com/smithy-lang/smithy-typescript
 
@@ -556,7 +544,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/awslabs/smithy-typescript
 
-### @smithy/middleware-compression 4.5.16
+### @smithy/middleware-compression 4.6.2
 - License: Apache-2.0
 - Source: https://github.com/smithy-lang/smithy-typescript
 
@@ -580,7 +568,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/awslabs/smithy-typescript
 
-### @smithy/types 4.16.1
+### @smithy/types 4.18.0
 - License: Apache-2.0
 - Source: https://github.com/smithy-lang/smithy-typescript
 
@@ -623,10 +611,6 @@ Total third-party packages: 372
 ### @testing-library/react 16.3.2
 - License: MIT
 - Source: https://github.com/testing-library/react-testing-library
-
-### @tybys/wasm-util 0.10.3
-- License: MIT
-- Source: https://github.com/toyobayashi/wasm-util
 
 ### @types/aria-query 5.0.4
 - License: MIT
@@ -692,31 +676,31 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/vitejs/vite-plugin-react
 
-### @vitest/expect 4.1.10
+### @vitest/expect 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/mocker 4.1.10
+### @vitest/mocker 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/pretty-format 4.1.10
+### @vitest/pretty-format 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/runner 4.1.10
+### @vitest/runner 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/snapshot 4.1.10
+### @vitest/snapshot 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/spy 4.1.10
+### @vitest/spy 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/utils 4.1.10
+### @vitest/utils 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
@@ -768,7 +752,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk-cli
 
-### aws-cdk-lib 2.263.0
+### aws-cdk-lib 2.269.0
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk
 
@@ -792,7 +776,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/bowser-js/bowser
 
-### brace-expansion 5.0.8
+### brace-expansion 5.0.9
 - License: MIT
 - Source: https://github.com/juliangruber/brace-expansion
 
@@ -988,7 +972,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/thecodrr/fdir
 
-### fflate 0.8.1
+### fflate 0.8.3
 - License: MIT
 - Source: https://github.com/101arrowz/fflate
 
@@ -999,6 +983,14 @@ Total third-party packages: 372
 ### fs-extra 11.3.6
 - License: MIT
 - Source: https://github.com/jprichardson/node-fs-extra
+
+### fsevents 2.3.2
+- License: MIT
+- Source: https://github.com/fsevents/fsevents
+
+### fsevents 2.3.3
+- License: MIT
+- Source: https://github.com/fsevents/fsevents
 
 ### function-bind 1.1.2
 - License: MIT
@@ -1120,11 +1112,7 @@ Total third-party packages: 372
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 
-### lightningcss-linux-x64-gnu 1.33.0
-- License: MPL-2.0
-- Source: https://github.com/parcel-bundler/lightningcss
-
-### lightningcss-linux-x64-musl 1.33.0
+### lightningcss-darwin-arm64 1.33.0
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 
@@ -1180,7 +1168,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: vercel/ms
 
-### nanoid 3.3.16
+### nanoid 3.3.19
 - License: MIT
 - Source: ai/nanoid
 
@@ -1224,7 +1212,7 @@ Total third-party packages: 372
 - License: ISC
 - Source: alexeyraspopov/picocolors
 
-### picomatch 4.0.5
+### picomatch 4.0.7
 - License: MIT
 - Source: micromatch/picomatch
 
@@ -1236,7 +1224,7 @@ Total third-party packages: 372
 - License: Apache-2.0
 - Source: https://github.com/microsoft/playwright
 
-### postcss 8.5.25
+### postcss 8.5.28
 - License: MIT
 - Source: postcss/postcss
 
@@ -1284,7 +1272,7 @@ Total third-party packages: 372
 - License: MIT
 - Source: sindresorhus/redent
 
-### rolldown 1.2.1
+### rolldown 1.2.8
 - License: MIT
 - Source: https://github.com/rolldown/rolldown
 
@@ -1444,11 +1432,11 @@ Total third-party packages: 372
 - License: MIT
 - Source: https://github.com/uuidjs/uuid
 
-### vite 8.2.0
+### vite 8.3.0
 - License: MIT
 - Source: https://github.com/vitejs/vite
 
-### vitest 4.1.10
+### vitest 4.1.11
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 

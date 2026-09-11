@@ -1,4 +1,4 @@
-import { DeleteCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { ddb } from '../../shared/ddb.js';
@@ -275,8 +275,17 @@ export const handler = async (
       });
     }
 
+    const existing = await ddb.send(new GetCommand({
+      TableName: PRICING_TABLE, Key: { model: body.model }, ConsistentRead: true,
+    }));
     const item = {
       model: body.model,
+      // The basic editor changes base dimensions, not routing/context tiers.
+      // Preserve those explicitly instead of silently deleting them on save.
+      contextTiers: existing?.Item?.contextTiers,
+      routingDimensions: existing?.Item?.routingDimensions,
+      serviceTierMultipliers: existing?.Item?.serviceTierMultipliers,
+      videoOutputPricing: existing?.Item?.videoOutputPricing,
       // Multi-dim canonical shape (consumed by meter via shared/pricing.ts).
       dimensions,
       // Legacy fields kept in sync for any consumer still reading them.
@@ -295,6 +304,7 @@ export const handler = async (
       source: 'override',
       currency: 'USD',
       fetchedAt: new Date().toISOString(),
+      verifiedAt: new Date().toISOString(),
     };
     await ddb.send(new PutCommand({ TableName: PRICING_TABLE, Item: item }));
     emitAudit(callerIdentity(event), scope, {

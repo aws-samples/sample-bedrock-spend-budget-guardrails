@@ -48,6 +48,19 @@ beforeEach(() => {
   lambdaSend.mockResolvedValue({});
 });
 
+it('preserves routing and context rates when the basic price editor saves an override', async () => {
+  const contextTiers = [{ minInputTokens: 272001, dimensions: { inputTokens: { unit: '1K tokens', pricePerUnit: 0.02 } } }];
+  const routingDimensions = { global: { inputTokens: { unit: '1K tokens', pricePerUnit: 0.01 } } };
+  const videoOutputPricing = { billingRule: 'luma-ray-v2', regionRates: {
+    'us-west-2': { HD: { unit: 'Second', pricePerUnit: 1.5 } },
+  } };
+  ddbSend.mockResolvedValueOnce({ Item: { contextTiers, routingDimensions, videoOutputPricing } });
+  const result = await handler(ev('POST /admin/pricing/overrides', {
+    body: { model: 'openai.gpt-6-astra', inputPer1k: 0.011 },
+  })) as { statusCode: number; body: string };
+  expect(result.statusCode).toBe(201);
+  expect(JSON.parse(result.body)).toMatchObject({ contextTiers, routingDimensions, videoOutputPricing, source: 'override' });
+});
 describe('POST /admin/pricing/discounts — scopes', () => {
   it('legacy account shape ({accountId}) still works and keys discount#<acct>', async () => {
     const r = (await handler(

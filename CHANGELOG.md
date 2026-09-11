@@ -8,6 +8,25 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-11
+
+### Added
+
+- Pricing coverage for Astra, Grok 4.6, Nova Reel, and Stability image services. Reviewed AWS website fallbacks include cache-write rates and routing/context tiers for frontier OpenAI models.
+- Image and video usage accounting, including Standard/HD rates and billable duration for Luma Ray v2. Physical media duration is preserved, and unsupported billing metadata remains visibly unpriced.
+- Alarms for missing usage on successful requests and stale reviewed prices, plus a metric for CUR charges without caller attribution. Failed requests without usage and zero-valued streaming start records are excluded from missing-usage alerts.
+- Audited, idempotent historical spend-repair tooling that preserves request guards and records effective correction timestamps.
+
+### Fixed
+
+- CUR reconciliation retains charges without caller identity and compares affected models at account/model scope, including attributed rows for the same model.
+- Pricing refreshes preserve operator overrides and reload offer files on warm Lambda runs. Pricing alarms follow the daily refresh cadence, and application metrics are isolated by stage.
+- Partial pricing gaps remain visible, unpriced alerts count primary invocations once, and the ledger preserves media usage and correction timestamps.
+
+### Security
+
+- Updated Vitest and its mocker, fflate, brace-expansion, and nanoid to patched versions, including the CDK dependency update needed for its bundled brace-expansion.
+
 ## [1.3.1] - 2026-08-20
 
 ### Fixed
@@ -83,7 +102,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.0
 [1.3.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.1
 [1.3.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.2.0

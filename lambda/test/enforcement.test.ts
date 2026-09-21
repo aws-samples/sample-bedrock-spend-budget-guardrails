@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { periodFor, WINDOWS } from '../src/shared/period';
 
 // The enforcement module reads BUDGETS_TABLE / RUNNING_SPEND_TABLE /
 // INFERENCE_PROFILES_TABLE / AWS_ACCOUNT_ID at module load. Set them before
@@ -238,6 +239,49 @@ describe('unlimited budget short-circuit', () => {
     expect(captured.filter((m) => m.name === 'UnlimitedBudgetSeen')).toHaveLength(1);
     // No IAM mutations.
     expect(iamSendMock.mock.calls).toHaveLength(0);
+  });
+});
+
+describe('policy creation across budget windows', () => {
+  beforeEach(() => {
+    iamSendMock.mockReset();
+    ddbSendMock.mockReset();
+    captured.length = 0;
+    pendingDims = {};
+    ddbSendMock.mockImplementation((cmd: unknown) => Promise.resolve(dispatchDdb(cmd)));
+    iamSendMock.mockImplementation((cmd: { _kind: string; input: { PolicyName?: string } }) => {
+      if (cmd._kind === 'CreatePolicyCommand') {
+        // Model IAM's actual constraint instead of accepting an invalid name.
+        if (!/^[A-Za-z0-9+=,.@_-]{1,128}$/.test(cmd.input.PolicyName ?? '')) {
+          throw Object.assign(new Error('Invalid IAM policy name'), { name: 'ValidationError' });
+        }
+        return Promise.resolve({});
+      }
+      if (cmd._kind === 'AttachUserPolicyCommand') return Promise.resolve({});
+      throw new Error(`Unexpected IAM command: ${cmd._kind}`);
+    });
+  });
+
+  it.each(WINDOWS)('creates, records, and attaches a deny for a %s breach', async (window) => {
+    const period = periodFor(window, new Date('2026-09-21T12:00:00Z'));
+    const event = makeStreamEvent();
+    const image = event.Records[0].dynamodb.NewImage;
+    image.period.S = period;
+    image.sk.S = `period#${period}#target#${image.target.S}`;
+
+    const handler = await importHandler();
+    expect(await handler(event as never)).toEqual({ processed: 1 });
+    const create = iamSendMock.mock.calls.find(([cmd]) => cmd._kind === 'CreatePolicyCommand')![0];
+    const arn = `arn:aws:iam::123456789012:policy/${create.input.PolicyName}`;
+    expect(iamSendMock.mock.calls.find(([cmd]) => cmd._kind === 'AttachUserPolicyCommand')?.[0].input)
+      .toEqual({ UserName: 'alice', PolicyArn: arn });
+    const stamp = ddbSendMock.mock.calls.find(([cmd]) =>
+      cmd.constructor.name === 'UpdateCommand' && cmd.input.TableName === 'test-running-spend',
+    )![0].input;
+    expect(stamp.Key.sk).toBe(image.sk.S);
+    expect(stamp.ExpressionAttributeValues[':a']).toBe(arn);
+    expect(captured.filter((m) => m.name === 'EnforcementApplied')).toHaveLength(1);
+    expect(captured.filter((m) => m.name === 'EnforcementErrors')).toHaveLength(0);
   });
 });
 

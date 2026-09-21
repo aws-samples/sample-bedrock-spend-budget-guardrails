@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDenyPolicy, denyPolicyName, principalToAttachTarget } from '../src/shared/policies';
+import { periodFor, WINDOWS } from '../src/shared/period';
 
 describe('deny policy builder', () => {
   it('targets the foundation-model ARN for a model# target', () => {
@@ -121,6 +122,26 @@ describe('denyPolicyName', () => {
     const b = denyPolicyName('principal#arn:aws:iam::123:user/alice', 'model#x', '2026-05');
     expect(a).toBe(b);
     expect(a).toMatch(/^bbg-deny-[0-9a-f]{12}-2026-05$/);
+    expect(a).toBe('bbg-deny-a80a92fb6a36-2026-05');
+  });
+
+  it.each(WINDOWS)('uses an IAM-valid name for a %s budget', (window) => {
+    const period = periodFor(window, new Date('2026-09-21T12:00:00Z'));
+    const name = denyPolicyName('principal#arn:aws:iam::123:user/alice', 'model#x', period);
+    expect(name).toMatch(/^[A-Za-z0-9+=,.@_-]{1,128}$/);
+    expect(name.endsWith(period.replace(/:/g, '-'))).toBe(true);
+  });
+
+  it('keeps distinct hashes when period suffixes normalize to the same value', () => {
+    expect(denyPolicyName('p', 't', 'daily:2026-09-21'))
+      .not.toBe(denyPolicyName('p', 't', 'daily-2026-09-21'));
+  });
+
+  it('separates windows and consecutive five-hour buckets', () => {
+    const now = new Date('2026-09-21T12:00:00Z');
+    const periods = [...WINDOWS.map((window) => periodFor(window, now)), '5h:2026-09-21T15'];
+    expect(new Set(periods.map((period) => denyPolicyName('p', 't', period))).size)
+      .toBe(periods.length);
   });
 
   it('differs across distinct inputs', () => {

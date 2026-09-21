@@ -60,7 +60,7 @@ export const AdminBudgets = ({
   embedded?: boolean;
 }) => {
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
-  const [spend, setSpend] = useState<SpendRow[]>([]);
+  const [spendByWindow, setSpendByWindow] = useState<Partial<Record<BudgetWindow, SpendRow[]>>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [showCreate, setShowCreate] = useState(false);
@@ -87,9 +87,16 @@ export const AdminBudgets = ({
   const refresh = async () => {
     setLoading(true);
     try {
-      const [b, s] = await Promise.all([api.listBudgets(config), api.listSpend(config)]);
+      const b = await api.listBudgets(config);
+      const windows = [...new Set(b.items.map((budget) => budget.window ?? 'monthly'))];
+      // Let the server derive each current UTC period, avoiding client clock
+      // skew and accidentally showing monthly spend for a shorter window.
+      const entries = await Promise.all(windows.map(async (window) => {
+        const response = await api.listSpend(config, undefined, window);
+        return [window, response.items] as const;
+      }));
       setBudgets(b.items);
-      setSpend(s.items);
+      setSpendByWindow(Object.fromEntries(entries));
       setError(undefined);
     } catch (err) {
       setError((err as Error).message);
@@ -105,8 +112,11 @@ export const AdminBudgets = ({
 
   const rows: BudgetWithStatus[] = useMemo(() => {
     return budgets.map((b) => {
-      // Find the spend row that matches this budget for the current period.
-      const match = spend.find((s) => s.principal === b.principal && (s.target === b.target || s.sk.endsWith(`#${b.target}`)));
+      // Match only within this budget's window; the same principal and target
+      // can also have a monthly accumulator or history from a prior window.
+      const match = spendByWindow[b.window ?? 'monthly']?.find(
+        (s) => s.principal === b.principal && (s.target === b.target || s.sk.endsWith(`#${b.target}`)),
+      );
       return {
         ...b,
         spendUsd: match?.spendUsd ?? 0,
@@ -117,7 +127,7 @@ export const AdminBudgets = ({
         enforcementMetric: match?.enforcementMetric,
       };
     });
-  }, [budgets, spend]);
+  }, [budgets, spendByWindow]);
 
   const handleDelete = async (row: BudgetRow) => {
     const ok = await confirmAction({

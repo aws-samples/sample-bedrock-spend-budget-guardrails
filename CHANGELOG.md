@@ -8,6 +8,13 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-21
+
+### Fixed
+
+- Weekly, daily, and five-hour budgets now generate valid IAM deny policy names, so budget breaches can block further calls. Monthly policy names and stored budget period keys are unchanged.
+- The Budgets page now loads current spend for each budget's reset window, showing non-monthly enforcement status and the Release action instead of incorrectly displaying monthly spend or zero.
+
 ## [1.4.0] - 2026-09-11
 
 ### Added
@@ -102,7 +109,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.1
 [1.4.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.0
 [1.3.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.1
 [1.3.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.0

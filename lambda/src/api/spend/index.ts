@@ -1,6 +1,7 @@
 import { QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { ddb, periodFor } from '../../shared/ddb.js';
+import { ddb } from '../../shared/ddb.js';
+import { periodFor, WINDOWS, type Window } from '../../shared/period.js';
 import { callerPrincipalKey, callerScope, json, requireAdmin, scopeAllows } from '../../shared/api.js';
 import { accountFromPrincipal } from '../../shared/iam-cross-account.js';
 
@@ -103,7 +104,11 @@ export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const route = event.routeKey;
-  const period = event.queryStringParameters?.period ?? periodFor();
+  const window = event.queryStringParameters?.window ?? 'monthly';
+  if (!WINDOWS.includes(window as Window)) {
+    return json(400, { error: 'window must be monthly, weekly, daily, or 5h' });
+  }
+  const period = event.queryStringParameters?.period ?? periodFor(window as Window);
 
   if (route === 'GET /admin/spend') {
     if (!requireAdmin(event)) return json(403, { error: 'Forbidden' });

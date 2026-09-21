@@ -9,6 +9,8 @@ import {
 import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { denyPolicyName } from '../src/shared/policies';
+import { periodFor, WINDOWS } from '../src/shared/period';
 
 // Set env before importing the handler — index.ts reads RUNNING_SPEND_TABLE
 // at module-load time. AWS_ACCOUNT_ID matches the test policy ARN's home
@@ -36,6 +38,34 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+});
+
+describe('rollover across budget windows', () => {
+  it.each(WINDOWS)('releases the IAM-safe policy using the original %s period key', async (window) => {
+    const period = periodFor(window, new Date('2026-09-21T12:00:00Z'));
+    const target = 'model#x';
+    const sk = `period#${period}#target#${target}`;
+    const policyArn = `arn:aws:iam::123456789012:policy/${denyPolicyName(PRINCIPAL, target, period)}`;
+    ddbMock.on(QueryCommand).resolves({
+      Items: [{ principal: PRINCIPAL, sk, period, enforcementPolicyArn: policyArn }],
+    });
+    ddbMock.on(UpdateCommand).resolves({});
+    iamMock.on(ListEntitiesForPolicyCommand).resolves({ PolicyUsers: [{ UserName: 'alice' }] });
+    iamMock.on(DetachUserPolicyCommand).resolves({});
+    iamMock.on(ListPolicyVersionsCommand).resolves({ Versions: [] });
+    iamMock.on(DeletePolicyCommand).resolves({});
+
+    const handler = await importHandler();
+    expect(await handler({ period })).toEqual({ rolledOver: 1 });
+    expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input.ExpressionAttributeValues)
+      .toEqual({ ':p': period });
+    expect(iamMock.commandCalls(DetachUserPolicyCommand)[0].args[0].input)
+      .toEqual({ UserName: 'alice', PolicyArn: policyArn });
+    expect(iamMock.commandCalls(DeletePolicyCommand)[0].args[0].input.PolicyArn).toBe(policyArn);
+    const update = ddbMock.commandCalls(UpdateCommand)[0].args[0].input;
+    expect(update.Key).toEqual({ principal: PRINCIPAL, sk });
+    expect(update.ExpressionAttributeValues).toEqual({ ':arn': policyArn });
+  });
 });
 
 describe('period-rollover detach failure path', () => {

@@ -324,8 +324,11 @@ const budgetQs = (principal: string, target: string): string =>
 
 /** Convenience wrappers used by pages. */
 export const api = {
-  listSpend: (config: BbgConfig, period?: string) =>
-    request<SpendResponse>(config, 'GET', `/admin/spend${period ? `?period=${period}` : ''}`),
+  listSpend: (config: BbgConfig, period?: string, window?: BudgetWindow) =>
+    request<SpendResponse>(
+      config, 'GET',
+      `/admin/spend${period ? `?period=${encodeURIComponent(period)}` : window ? `?window=${window}` : ''}`,
+    ),
   listSpendTrend: (config: BbgConfig, months = 6) =>
     request<{
       months: number;

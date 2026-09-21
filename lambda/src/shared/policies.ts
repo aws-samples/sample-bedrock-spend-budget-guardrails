@@ -169,7 +169,11 @@ export const buildDenyPolicy = (i: DenyPolicyInputs): DenyPolicyDoc => {
 /** Stable short hash for a (principal, target, period) tuple. */
 export const denyPolicyName = (principal: string, target: string, period: string): string => {
   const hash = createHash('sha1').update(`${principal}|${target}|${period}`).digest('hex').slice(0, 12);
-  return `bbg-deny-${hash}-${period}`;
+  // Non-monthly period keys contain ":" (e.g. daily:2026-09-21), which
+  // IAM rejects in PolicyName. Normalize only the readable suffix: the
+  // original tuple still determines uniqueness, and monthly names stay stable.
+  const suffix = period.replace(/[^A-Za-z0-9+=,.@_-]/g, '-');
+  return `bbg-deny-${hash}-${suffix}`;
 };
 
 /**

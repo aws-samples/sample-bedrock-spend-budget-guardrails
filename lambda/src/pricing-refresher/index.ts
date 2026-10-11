@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-pricing';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { dimensionsOf, type Dimension, type DimensionKind } from '../shared/pricing.js';
+import { dimensionsOf, type Dimension, type DimensionKind, type PricingRow } from '../shared/pricing.js';
 import { publishedPricingFor } from './published-pricing.js';
 import { logger, metrics, MetricUnit } from '../shared/powertools.js';
 import { getConfiguredMemoryMb, recordSelfCost } from '../shared/self-cost.js';
@@ -83,6 +83,8 @@ interface SkuJson {
 }
 
 interface PriceRow {
+  /** Separate context buckets: long-context SKUs must never compete with short rates. */
+  contextTiers?: Record<number, PriceRow>;
   videoRates?: Partial<Record<'HD' | 'Standard', Dimension>>;
   websiteFallback?: boolean;
   inputPer1k?: number;
@@ -276,8 +278,21 @@ const recordTokenPrice = (
   kind: TokenKind,
   pricePer1k: number,
   usagetype: string,
+  contextMinInputTokens?: number,
 ): void => {
-  const row = ensureRegion(table, region);
+  // Ultrafast is priced through an explicitly reviewed service-tier multiplier,
+  // not as a candidate for the default tier (including in sparse catalogs).
+  if (/[_-]ultrafast(?:[_-]|$)/i.test(usagetype)) return;
+  let row = ensureRegion(table, region);
+  if (/[_-]long_ctx(?:[_-]|$)/i.test(usagetype)) {
+    // The SKU names the tier but not its boundary. Only use an independently
+    // reviewed boundary for this exact model; never guess for an unknown model.
+    if (contextMinInputTokens === undefined) {
+      logger.warn('Skipping long-context SKU without a reviewed boundary', { usagetype });
+      return;
+    }
+    row = ((row.contextTiers ??= {})[contextMinInputTokens] ??= { dimensions: {}, precedence: {} });
+  }
   const dimKind = tokenKindToDimensionKind[kind];
   recordRoutingVariant(row, dimKind, usagetype, {
     unit: '1K tokens',
@@ -423,7 +438,7 @@ const refreshFoundationModels = async (
     ]);
     if (skus.length > 0) break;
   }
-  recordFoundationModelsSkus(skus, region, table, schemaWatch);
+  recordFoundationModelsSkus(skus, region, table, schemaWatch, modelId);
 };
 
 /**
@@ -437,6 +452,7 @@ const recordFoundationModelsSkus = (
   region: string,
   table: RegionalPricing,
   schemaWatch: SchemaWatchState,
+  modelId?: string,
 ): void => {
   for (const sku of skus) {
     // Forward-compat: watch for AWS adding a stable per-SKU model identifier.
@@ -450,7 +466,8 @@ const recordFoundationModelsSkus = (
     const tokenKind = classifyFoundationModelsUsage(usage);
     if (tokenKind) {
       const per1k = toPricePer1k(priced.price, 'AmazonBedrockFoundationModels');
-      recordTokenPrice(table, region, tokenKind, per1k, usage);
+      recordTokenPrice(table, region, tokenKind, per1k, usage,
+        modelId ? publishedPricingFor(modelId, region)?.contextTiers?.[0]?.minInputTokens : undefined);
       continue;
     }
 
@@ -497,7 +514,7 @@ const recordAmazonBedrockSkus = (
     if (!priced) continue;
 
     const tokenKind = classifyAmazonBedrockUsage(usage, inferenceType);
-    if (tokenKind && priced.unit === '1K tokens') {
+    if (tokenKind && /^1k tokens$/i.test(priced.unit.trim())) {
       const per1k = toPricePer1k(priced.price, 'AmazonBedrock');
       recordTokenPrice(table, region, tokenKind, per1k, usage);
       continue;
@@ -620,6 +637,7 @@ const refreshFromBulkOffer = async (
   region: string,
   table: RegionalPricing,
   schemaWatch: SchemaWatchState,
+  modelId: string,
 ): Promise<void> => {
   // AmazonBedrock file — keyed by `model`.
   const ab = await getBulkOfferSkus('AmazonBedrock', region);
@@ -641,7 +659,7 @@ const refreshFromBulkOffer = async (
       const sn = s.product.attributes.servicename;
       return typeof sn === 'string' && wanted.has(sn.toLowerCase());
     });
-    recordFoundationModelsSkus(matching as SkuJson[], region, table, schemaWatch);
+    recordFoundationModelsSkus(matching as SkuJson[], region, table, schemaWatch, modelId);
   }
 };
 
@@ -673,6 +691,31 @@ export const resolveModelPricing = async (
   schemaWatch: SchemaWatchState = newSchemaWatchState(),
 ): Promise<RegionalPricing> => {
   const regional: RegionalPricing = {};
+  const addReviewedContextTiers = (row: PriceRow, region: string): void => {
+    const published = publishedPricingFor(m.modelId, region);
+    for (const tier of published?.contextTiers ?? []) {
+      const target = ((row.contextTiers ??= {})[tier.minInputTokens] ??=
+        { dimensions: {}, precedence: {} });
+      const fillMissing = (
+        into: Partial<Record<DimensionKind, Dimension>>,
+        reviewed: Partial<Record<DimensionKind, Dimension>>,
+      ): void => {
+        for (const [kind, dimension] of Object.entries(reviewed)) {
+          if (into[kind as DimensionKind] === undefined && dimension !== undefined) {
+            into[kind as DimensionKind] = dimension;
+            row.websiteFallback = true;
+          }
+        }
+      };
+      // A partially published tier is not complete merely because one SKU
+      // exists. Fill only missing dimensions; never replace catalog rates.
+      fillMissing(target.dimensions, { ...tier.dimensions, ...tier.regionDimensions?.[region] });
+      for (const [mode, dimensions] of Object.entries(tier.routingDimensions ?? {})) {
+        const bucket = ((target.routing ??= {})[mode] ??= { dimensions: {}, precedence: {} });
+        fillMissing(bucket.dimensions, dimensions);
+      }
+    }
+  };
   const pricedIn = (region: string): boolean =>
     Object.keys(regional[region]?.dimensions ?? {}).length > 0;
 
@@ -689,9 +732,10 @@ export const resolveModelPricing = async (
   const fmServicenames = servicenameCandidates(m.modelName, m.providerName, m.modelId);
 
   for (const region of METERED_REGIONS) {
+    const published = publishedPricingFor(m.modelId, region);
     // PRIMARY: price off the pre-warmed bulk offer files (both service codes).
     try {
-      await refreshFromBulkOffer(ambNames, fmServicenames, region, regional, schemaWatch);
+      await refreshFromBulkOffer(ambNames, fmServicenames, region, regional, schemaWatch, m.modelId);
     } catch (err) {
       logger.warn('bulk offer pricing failed', {
         modelId: m.modelId,
@@ -699,11 +743,13 @@ export const resolveModelPricing = async (
         err: (err as Error).message,
       });
     }
-    if (pricedIn(region)) continue;
+    if (pricedIn(region)) {
+      addReviewedContextTiers(regional[region], region);
+      continue;
+    }
 
     // Reviewed website fallback avoids thousands of unsuccessful Query calls.
     // Bulk remains first so newly published official SKUs take precedence.
-    const published = publishedPricingFor(m.modelId);
     if (published) {
       const dims = dimensionsOf(published, region);
       regional[region] = {
@@ -715,6 +761,7 @@ export const resolveModelPricing = async (
         routing: Object.fromEntries(Object.entries(published.routingDimensions ?? {})
           .map(([mode, dimensions]) => [mode, { dimensions, precedence: {} }])),
       };
+      addReviewedContextTiers(regional[region], region);
       continue;
     }
 
@@ -798,8 +845,10 @@ const writePricingRow = async (
     string,
     { inputPer1k?: number; outputPer1k?: number; cacheReadPer1k?: number; cacheWritePer1k?: number }
   > = {};
-  const published = publishedPricingFor(modelId);
+  const published = Object.keys(regional)
+    .map((region) => publishedPricingFor(modelId, region)).find((row) => row !== undefined);
   const usesWebsite = Object.values(regional).some((r) => r.websiteFallback);
+  const contextTiers = new Map<number, NonNullable<PricingRow['contextTiers']>[number]>();
 
   for (const [region, r] of Object.entries(regional)) {
     inputPer1k ??= r.inputPer1k;
@@ -822,6 +871,24 @@ const writePricingRow = async (
         [DimensionKind, Dimension]
       >) {
         target[k] ??= dim;
+      }
+    }
+    for (const [boundary, rates] of Object.entries(r.contextTiers ?? {})) {
+      const minInputTokens = Number(boundary);
+      let tier = contextTiers.get(minInputTokens);
+      if (!tier) {
+        tier = { minInputTokens, dimensions: {}, regionDimensions: {}, routingDimensions: {} };
+        contextTiers.set(minInputTokens, tier);
+      }
+      tier.regionDimensions![region] = rates.dimensions;
+      for (const [kind, dimension] of Object.entries(rates.dimensions)) {
+        tier.dimensions[kind as DimensionKind] ??= dimension;
+      }
+      for (const [mode, bucket] of Object.entries(rates.routing ?? {})) {
+        const target = (tier.routingDimensions![mode] ??= {});
+        for (const [kind, dimension] of Object.entries(bucket.dimensions)) {
+          target[kind as DimensionKind] ??= dimension;
+        }
       }
     }
   }
@@ -854,12 +921,15 @@ const writePricingRow = async (
         // meter treats a missing map as "no routing-specific rate").
         ...(Object.keys(routingDimensions).length > 0 ? { routingDimensions } : {}),
         source: usesWebsite ? 'aws-website' : source,
-        ...(published && usesWebsite ? {
-          contextTiers: published.contextTiers,
+        ...(contextTiers.size ? { contextTiers: [...contextTiers.values()] } : {}),
+        // Even with catalog prices, context boundaries and service-tier
+        // multipliers can rely on a reviewed card. Keep that review age visible.
+        ...(published && (usesWebsite || contextTiers.size || published.serviceTierMultipliers) ? {
           sourceUrl: published.sourceUrl,
           verifiedAt: published.verifiedAt,
         } : {}),
-        ...(modelId === 'xai.grok-4.6' ? { serviceTierMultipliers: { priority: 1.75, flex: 0.5 } } : {}),
+        ...(published?.serviceTierMultipliers ? { serviceTierMultipliers: published.serviceTierMultipliers }
+          : modelId === 'xai.grok-4.6' ? { serviceTierMultipliers: { priority: 1.75, flex: 0.5 } } : {}),
         notes,
         currency: 'USD',
         fetchedAt: new Date().toISOString(),
@@ -929,7 +999,7 @@ export const computePricingRefreshAgeSeconds = async (
       // Skip rows for models AWS no longer lists — a stale price on an
       // un-invocable model isn't a freshness gap. Also skips reserved rows.
       if (!model || !liveModelIds.has(model)) continue;
-      if (item.source === 'aws-website' || item.source === 'override') {
+      if (item.source === 'aws-website' || item.source === 'override' || item.verifiedAt !== undefined) {
         const reviewed = Date.parse(String(item.verifiedAt ?? item.fetchedAt ?? ''));
         fallbackAge = Math.max(fallbackAge, Number.isFinite(reviewed)
           ? Math.max(0, Math.floor((nowMs - reviewed) / 1000)) : 366 * 86400);

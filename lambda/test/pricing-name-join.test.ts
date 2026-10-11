@@ -103,6 +103,20 @@ describe('classifyNonTokenUsage — embeddings/rerank non-token shapes', () => {
 describe('SKU selection is order-independent (claim precedence + cheapest tiebreak)', () => {
   const { recordTokenPrice } = __test;
 
+  it('does not use an Ultrafast-only SKU as a default-tier rate', () => {
+    const table = {};
+    recordTokenPrice(table, 'us-east-1', 'input', 0.066,
+      'USE1-MP:USE1_input_tokens_ultrafast-Units');
+    expect(table).toEqual({});
+  });
+
+  it('does not guess a long-context threshold for an unreviewed model', () => {
+    const table: Record<string, { dimensions: Record<string, unknown> }> = {};
+    recordTokenPrice(table as never, 'us-east-1', 'input', 0.022,
+      'USE1-MP:USE1_input_tokens_long_ctx_standard-Units');
+    expect(table['us-east-1'].dimensions).toEqual({});
+  });
+
   it('records global-variant SKUs into the routing bucket AND keeps the regional rate on the bare dimension', () => {
     // Claude Opus 5 us-west-2, rates verified against CUR 2026-08-20:
     // regional input $0.0055, global-standard input $0.005.

@@ -1,0 +1,658 @@
+[
+  {
+    "product": {
+      "sku": "QWRY5KZRSGYSQG55",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_output_tokens_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "QWRY5KZRSGYSQG55.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "QWRY5KZRSGYSQG55",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "QWRY5KZRSGYSQG55.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "QWRY5KZRSGYSQG55.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|output_tokens_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "50.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "6FP6JR24SRPWTKMU",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_output_tokens_long_ctx_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "6FP6JR24SRPWTKMU.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "6FP6JR24SRPWTKMU",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "6FP6JR24SRPWTKMU.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "6FP6JR24SRPWTKMU.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|output_tokens_long_ctx_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "82.5000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "P7AU9SY2HDD3FSRU",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_input_tokens_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "P7AU9SY2HDD3FSRU.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "P7AU9SY2HDD3FSRU",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "P7AU9SY2HDD3FSRU.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "P7AU9SY2HDD3FSRU.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|input_tokens_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "10.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "D455DBHMN7QPYM77",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_write_tokens_30m_long_ctx_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "D455DBHMN7QPYM77.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "D455DBHMN7QPYM77",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "D455DBHMN7QPYM77.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "D455DBHMN7QPYM77.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_write_tokens_30m_long_ctx_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "25.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "BNZ8QWV74SMQHVV6",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_write_tokens_30m_long_ctx_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "BNZ8QWV74SMQHVV6.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "BNZ8QWV74SMQHVV6",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "BNZ8QWV74SMQHVV6.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "BNZ8QWV74SMQHVV6.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_write_tokens_30m_long_ctx_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "27.5000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "FHRZ3M9DGK3KPURG",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_output_tokens_long_ctx_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "FHRZ3M9DGK3KPURG.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "FHRZ3M9DGK3KPURG",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "FHRZ3M9DGK3KPURG.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "FHRZ3M9DGK3KPURG.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|output_tokens_long_ctx_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "75.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "YRUJS5WTF6Z78DNT",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_input_tokens_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "YRUJS5WTF6Z78DNT.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "YRUJS5WTF6Z78DNT",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "YRUJS5WTF6Z78DNT.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "YRUJS5WTF6Z78DNT.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|input_tokens_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "11.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "9AQR85SFAAR5A5BT",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_read_tokens_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "9AQR85SFAAR5A5BT.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "9AQR85SFAAR5A5BT",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "9AQR85SFAAR5A5BT.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "9AQR85SFAAR5A5BT.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_read_tokens_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "1.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "G3KJUMCC2EGNYJC7",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_write_tokens_30m_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "G3KJUMCC2EGNYJC7.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "G3KJUMCC2EGNYJC7",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "G3KJUMCC2EGNYJC7.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "G3KJUMCC2EGNYJC7.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_write_tokens_30m_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "12.5000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "XGCG9DRU6VKG2NRE",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_read_tokens_long_ctx_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "XGCG9DRU6VKG2NRE.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "XGCG9DRU6VKG2NRE",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "XGCG9DRU6VKG2NRE.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "XGCG9DRU6VKG2NRE.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_read_tokens_long_ctx_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "2.2000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "SBNXFSP9MDQ5MRFK",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_input_tokens_long_ctx_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "SBNXFSP9MDQ5MRFK.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "SBNXFSP9MDQ5MRFK",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "SBNXFSP9MDQ5MRFK.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "SBNXFSP9MDQ5MRFK.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|input_tokens_long_ctx_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "20.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "B9ND98JUZS4WTSPZ",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_write_tokens_30m_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "B9ND98JUZS4WTSPZ.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "B9ND98JUZS4WTSPZ",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "B9ND98JUZS4WTSPZ.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "B9ND98JUZS4WTSPZ.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_write_tokens_30m_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "13.7500000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "5XZWVV3E94UEHZGC",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_output_tokens_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "5XZWVV3E94UEHZGC.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "5XZWVV3E94UEHZGC",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "5XZWVV3E94UEHZGC.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "5XZWVV3E94UEHZGC.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|output_tokens_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "55.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "2YZVMBSYUHJ7KQZJ",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_read_tokens_long_ctx_global_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "2YZVMBSYUHJ7KQZJ.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "2YZVMBSYUHJ7KQZJ",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "2YZVMBSYUHJ7KQZJ.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "2YZVMBSYUHJ7KQZJ.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_read_tokens_long_ctx_global_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "2.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "CMDQQY8FV38RU84G",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_cache_read_tokens_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "CMDQQY8FV38RU84G.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "CMDQQY8FV38RU84G",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "CMDQQY8FV38RU84G.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "CMDQQY8FV38RU84G.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|cache_read_tokens_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "1.1000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "TYS9ZA6ZRKMH7FTP",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-MP:USE1_input_tokens_long_ctx_standard-Units",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "OpenAI GPT-6 Astra",
+        "provider": "OpenAI",
+        "regionCode": "us-east-1",
+        "servicename": "OpenAI GPT-6 Astra (Amazon Bedrock Edition)"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "TYS9ZA6ZRKMH7FTP.4799GE89SK": {
+          "offerTermCode": "4799GE89SK",
+          "sku": "TYS9ZA6ZRKMH7FTP",
+          "effectiveDate": "2026-09-01T00:00:00Z",
+          "priceDimensions": {
+            "TYS9ZA6ZRKMH7FTP.4799GE89SK.6YS6EN2CT7": {
+              "rateCode": "TYS9ZA6ZRKMH7FTP.4799GE89SK.6YS6EN2CT7",
+              "description": "AWS Marketplace software usage|us-east-1|input_tokens_long_ctx_standard",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1M tokens",
+              "pricePerUnit": {
+                "USD": "22.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  }
+]

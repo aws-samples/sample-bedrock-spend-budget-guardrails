@@ -1,0 +1,166 @@
+[
+  {
+    "product": {
+      "sku": "XC39NVNGRPCQNSAZ",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaSonic2.5-text-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Text output token",
+        "model": "Nova 2.5 Sonic",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "XC39NVNGRPCQNSAZ.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "XC39NVNGRPCQNSAZ",
+          "effectiveDate": "2026-10-01T00:00:00Z",
+          "priceDimensions": {
+            "XC39NVNGRPCQNSAZ.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "XC39NVNGRPCQNSAZ.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00275 per 1k tokens for USE1-NovaSonic2.5-text-output-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1k tokens",
+              "pricePerUnit": {
+                "USD": "0.0027500000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "545D9MCNGJ6YH7ZP",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaSonic2.5-speech-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Speech Understanding input token",
+        "model": "Nova 2.5 Sonic",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "545D9MCNGJ6YH7ZP.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "545D9MCNGJ6YH7ZP",
+          "effectiveDate": "2026-10-01T00:00:00Z",
+          "priceDimensions": {
+            "545D9MCNGJ6YH7ZP.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "545D9MCNGJ6YH7ZP.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.003 per 1k tokens for USE1-NovaSonic2.5-speech-input-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1k tokens",
+              "pricePerUnit": {
+                "USD": "0.0030000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "VMV2TR4RQK8R628X",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaSonic2.5-speech-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Speech Understanding output token",
+        "model": "Nova 2.5 Sonic",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "VMV2TR4RQK8R628X.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "VMV2TR4RQK8R628X",
+          "effectiveDate": "2026-10-01T00:00:00Z",
+          "priceDimensions": {
+            "VMV2TR4RQK8R628X.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "VMV2TR4RQK8R628X.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.012 per 1k tokens for USE1-NovaSonic2.5-speech-output-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1k tokens",
+              "pricePerUnit": {
+                "USD": "0.0120000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  {
+    "product": {
+      "sku": "FS6KSC7AWUD3CMSS",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaSonic2.5-text-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Text Input Token",
+        "model": "Nova 2.5 Sonic",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "terms": {
+      "OnDemand": {
+        "FS6KSC7AWUD3CMSS.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "FS6KSC7AWUD3CMSS",
+          "effectiveDate": "2026-10-01T00:00:00Z",
+          "priceDimensions": {
+            "FS6KSC7AWUD3CMSS.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "FS6KSC7AWUD3CMSS.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00033 per 1k tokens for USE1-NovaSonic2.5-text-input-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1k tokens",
+              "pricePerUnit": {
+                "USD": "0.0003300000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  }
+]

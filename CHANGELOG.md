@@ -8,6 +8,18 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-11
+
+### Fixed
+
+- Pricing refreshes now cover GPT-6.1 Sol, GPT-6 Sol, GPT-6 Luna, GLM 5.3, and the older GPT-5.4/5.5 models using reviewed AWS prices when catalog SKUs are unavailable. Sol 6.1's distinct cache-read rate and documented Ultrafast pricing are preserved.
+- Catalog refreshes retain Astra's long-context and global-routing prices instead of replacing them with short-context rates. Documented Ultrafast pricing remains available when catalog prices take precedence.
+- Nova 2.5 Sonic pricing is recognized when the catalog spells the token unit `1k tokens`. Reviewed fallback prices have been revalidated, and the obsolete inferred India surcharge for GPT-5.6 Terra/Luna has been removed.
+
+### Security
+
+- Updated CDK and source-map tooling to resolve denial-of-service advisories in bundled `brace-expansion` and `source-map-js`.
+
 ## [1.4.1] - 2026-09-21
 
 ### Fixed
@@ -109,7 +121,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.2
 [1.4.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.1
 [1.4.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.0
 [1.3.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.3.1

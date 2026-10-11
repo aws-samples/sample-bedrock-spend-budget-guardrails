@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs';
 const capturedGrokSkus = JSON.parse(readFileSync(new URL('./fixtures/grok-46-pricing.json', import.meta.url), 'utf8'));
 const capturedReelSkus = JSON.parse(readFileSync(new URL('./fixtures/nova-reel-pricing.json', import.meta.url), 'utf8'));
 const capturedLumaSkus = JSON.parse(readFileSync(new URL('./fixtures/luma-ray-pricing.json', import.meta.url), 'utf8'));
+const capturedAstraSkus = JSON.parse(readFileSync(new URL('./fixtures/pricing/astra-context-tiers.json', import.meta.url), 'utf8'));
+const capturedSonicSkus = JSON.parse(readFileSync(new URL('./fixtures/pricing/nova-25-sonic.json', import.meta.url), 'utf8'));
+let includeOctoberSkus = false;
+let reverseOctoberSkus = false;
+let omitLongContextCacheRead = false;
 
 /**
  * Locks in the bulk-primary contract (the fix for the 5-region truncation):
@@ -124,8 +129,13 @@ vi.mock('../src/pricing-refresher/bulk-offer.js', async (importOriginal) => {
     ...real,
     loadRegionOfferSkus: vi.fn(async (region: string, serviceCode = 'AmazonBedrock') => {
       loadCalls.push({ region, serviceCode });
-      if (serviceCode === 'AmazonBedrock') return [...AB_SKUS, ...capturedGrokSkus, ...capturedReelSkus];
-      if (serviceCode === 'AmazonBedrockFoundationModels') return [...FM_SKUS, ...capturedLumaSkus];
+      let astra = reverseOctoberSkus ? [...capturedAstraSkus].reverse() : capturedAstraSkus;
+      if (omitLongContextCacheRead) astra = astra.filter((s: { product: { attributes: { usagetype: string } } }) =>
+        !s.product.attributes.usagetype.includes('cache_read_tokens_long_ctx_global_standard'));
+      if (serviceCode === 'AmazonBedrock') return [...AB_SKUS, ...capturedGrokSkus, ...capturedReelSkus,
+        ...(includeOctoberSkus ? capturedSonicSkus : [])];
+      if (serviceCode === 'AmazonBedrockFoundationModels') return [...FM_SKUS, ...capturedLumaSkus,
+        ...(includeOctoberSkus ? astra : [])];
       return [];
     }),
   };
@@ -164,6 +174,9 @@ const putModels = (): string[] =>
 
 describe('pricing-refresher — bulk-primary contract', () => {
   beforeEach(() => {
+    includeOctoberSkus = false;
+    reverseOctoberSkus = false;
+    omitLongContextCacheRead = false;
     pricingSendMock.mockReset();
     bedrockSendMock.mockReset();
     ddbSendMock.mockReset();
@@ -173,6 +186,87 @@ describe('pricing-refresher — bulk-primary contract', () => {
     // Query API returns nothing if it's ever reached (it shouldn't be for
     // bulk-priced models).
     pricingSendMock.mockResolvedValue({ PriceList: [], NextToken: undefined });
+  });
+
+  it.each([false, true])('retains catalog Astra context and routing tiers (reverse=%s)', async (reverse) => {
+    includeOctoberSkus = true;
+    reverseOctoberSkus = reverse;
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'openai.gpt-6-astra', modelName: 'GPT-6 Astra', providerName: 'OpenAI' },
+    ] });
+    await (await importHandler())();
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'openai.gpt-6-astra')![0].input.Item;
+    expect(row.source).toBe('pricing-api');
+    expect(row.dimensions.inputTokens.pricePerUnit).toBe(0.011);
+    expect(row.routingDimensions.global.inputTokens.pricePerUnit).toBe(0.01);
+    expect(row.contextTiers).toHaveLength(1);
+    expect(row.contextTiers[0].minInputTokens).toBe(272001);
+    expect(row.contextTiers[0].dimensions.inputTokens.pricePerUnit).toBe(0.022);
+    expect(row.contextTiers[0].routingDimensions.global.outputTokens.pricePerUnit).toBe(0.075);
+    const { computeCost } = await import('../src/shared/pricing.js');
+    expect(computeCost(row, 'us-east-1', { inputTokens: 272000, outputTokens: 1000 },
+      0, 'global').spendUsd).toBeCloseTo(2.77, 8);
+    expect(computeCost(row, 'us-east-1', { inputTokens: 1001, cacheReadTokens: 270000,
+      cacheWriteTokens: 1000, outputTokens: 1000 }, 0, 'global').spendUsd).toBeCloseTo(0.66002, 8);
+    expect(row.serviceTierMultipliers.ultrafast).toBe(6);
+    expect(row.verifiedAt).toBe('2026-10-11T00:00:00.000Z');
+  });
+
+  it('accepts the actual lowercase token unit from Nova 2.5 Sonic SKUs', async () => {
+    includeOctoberSkus = true;
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'amazon.nova-2-5-sonic', modelName: 'Nova 2.5 Sonic', providerName: 'Amazon' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).not.toContain('amazon.nova-2-5-sonic');
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'amazon.nova-2-5-sonic')![0].input.Item;
+    // Existing coarse token-meter policy selects the lowest same-tier rate.
+    const prices = (direction: string): number[] => capturedSonicSkus
+      .filter((s: { product: { attributes: { usagetype: string } } }) =>
+        s.product.attributes.usagetype.includes(`-${direction}-tokens`))
+      .flatMap((s: { terms: { OnDemand: Record<string, { priceDimensions: Record<string, { pricePerUnit: { USD: string } }> }> } }) =>
+        Object.values(s.terms.OnDemand).flatMap(t => Object.values(t.priceDimensions)
+          .map(d => Number(d.pricePerUnit.USD))));
+    expect(row.dimensions.inputTokens.pricePerUnit).toBe(Math.min(...prices('input')));
+    expect(row.dimensions.outputTokens.pricePerUnit).toBe(Math.min(...prices('output')));
+    expect(row.dimensions.inputTokens.unit).toBe('1K tokens');
+  });
+
+  it('fills a missing catalog context dimension without replacing the remaining catalog rates', async () => {
+    includeOctoberSkus = true;
+    omitLongContextCacheRead = true;
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'openai.gpt-6-astra', modelName: 'GPT-6 Astra', providerName: 'OpenAI' },
+    ] });
+    await (await importHandler())();
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'openai.gpt-6-astra')![0].input.Item;
+    const global = row.contextTiers[0].routingDimensions.global;
+    expect(global.cacheReadTokens.pricePerUnit).toBe(0.002);
+    expect(global.outputTokens.pricePerUnit).toBe(0.075);
+    expect(row.source).toBe('aws-website');
+    const { computeCost } = await import('../src/shared/pricing.js');
+    expect(computeCost(row, 'us-east-1', { cacheReadTokens: 272001 }, 0, 'global').spendUsd)
+      .toBeCloseTo(0.544002, 8);
+  });
+
+  it('automatically writes discovered Sol 6.1 with reviewed context and service tiers', async () => {
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'openai.gpt-6.1-sol', modelName: 'GPT-6.1 Sol', providerName: 'OpenAI' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).toEqual([]);
+    const put = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'openai.gpt-6.1-sol')![0].input;
+    expect(put.Item.dimensions.cacheReadTokens.pricePerUnit).toBe(0.00011);
+    expect(put.Item.contextTiers[0].routingDimensions.global.cacheReadTokens.pricePerUnit).toBe(0.0002);
+    expect(put.Item.serviceTierMultipliers.ultrafast).toBe(6);
+    expect(put.Item.source).toBe('aws-website');
+    expect(put.ConditionExpression).toContain('#source <> :override');
+    const queried = pricingSendMock.mock.calls.map(([c]) => c.input.Filters);
+    expect(JSON.stringify(queried)).not.toContain('GPT-6.1 Sol');
   });
 
   it('retains both captured Ray v2 resolution SKUs in the stored pricing row', async () => {

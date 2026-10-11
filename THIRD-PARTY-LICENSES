@@ -88,7 +88,7 @@ Total third-party packages: 369
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk-cli
 
-### @aws-cdk/cloud-assembly-schema 54.15.0
+### @aws-cdk/cloud-assembly-schema 54.26.0
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk-cli
 
@@ -316,7 +316,7 @@ Total third-party packages: 369
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-sdk-js-v3
 
-### @aws/cloudformation-validate 1.9.0-beta
+### @aws/cloudformation-validate 1.12.1
 - License: Apache-2.0
 - Source: https://github.com/aws-cloudformation/cloudformation-validate
 
@@ -752,7 +752,7 @@ Total third-party packages: 369
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk-cli
 
-### aws-cdk-lib 2.269.0
+### aws-cdk-lib 2.273.0
 - License: Apache-2.0
 - Source: https://github.com/aws/aws-cdk
 
@@ -776,7 +776,7 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/bowser-js/bowser
 
-### brace-expansion 5.0.9
+### brace-expansion 5.0.12
 - License: MIT
 - Source: https://github.com/juliangruber/brace-expansion
 
@@ -1324,7 +1324,7 @@ Total third-party packages: 369
 - License: BSD-3-Clause
 - Source: http://github.com/mozilla/source-map
 
-### source-map-js 1.2.1
+### source-map-js 1.2.2
 - License: BSD-3-Clause
 - Source: 7rulnik/source-map-js
 

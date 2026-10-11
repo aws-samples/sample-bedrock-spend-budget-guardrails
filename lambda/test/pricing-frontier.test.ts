@@ -4,6 +4,62 @@ import { computeCost } from '../src/shared/pricing.js';
 import { canonicalizeModelId, extractUsage, type BedrockInvocationLog } from '../src/meter/index.js';
 
 describe('published frontier pricing', () => {
+  it('keeps Sol 6.1 cache reads distinct and prices its documented Ultrafast tier', () => {
+    const usage = { inputTokens: 1000, cacheWriteTokens: 1000, cacheReadTokens: 1000, outputTokens: 1000 };
+    const row = publishedPricingFor('openai.gpt-6.1-sol');
+    expect(computeCost(row, 'us-west-2', usage, 0, 'global').spendUsd).toBeCloseTo(0.0146, 8);
+    expect(computeCost(row, 'us-west-2', usage, 0, 'us').spendUsd).toBeCloseTo(0.01606, 8);
+    expect(computeCost(row, 'us-west-2', usage, 0, 'global', 'ultrafast').spendUsd)
+      .toBeCloseTo(0.0876, 8);
+    expect(computeCost(row, 'us-west-2', { inputTokens: 272001, outputTokens: 1000 },
+      0, 'global', 'ultrafast').spendUsd).toBeCloseTo(6.618024, 8);
+    expect(computeCost(row, 'us-west-2', usage, 0, 'global', 'priority').priced).toBe(false);
+    expect(row?.sourceUrl).toContain('model-card-openai-gpt-6-1-sol.html');
+  });
+
+  it.each([
+    ['openai.gpt-6-sol', 0.0147, 0.01617],
+    // computeCost records microdollars; retain full precision in the price row.
+    ['openai.gpt-6-luna', 0.000735, 0.000809],
+    ['zai.glm-5.3', 0.009372, 0.010309],
+  ])('prices current reviewed routing and cache dimensions for %s', (model, global, geo) => {
+    const row = publishedPricingFor(String(model));
+    const usage = { inputTokens: 1000, cacheWriteTokens: 1000, cacheReadTokens: 1000, outputTokens: 1000 };
+    expect(computeCost(row, 'us-west-2', usage, 0, 'global').spendUsd).toBeCloseTo(Number(global), 8);
+    expect(computeCost(row, 'us-west-2', usage, 0, 'us').spendUsd).toBeCloseTo(Number(geo), 8);
+  });
+
+  it('does not invent cache-write rates or global routing for older Mantle-only models', () => {
+    for (const [model, input, output, cache] of [
+      ['openai.gpt-5.4', 0.00275, 0.0165, 0.000275],
+      ['openai.gpt-5.5', 0.0055, 0.033, 0.00055],
+    ] as const) {
+      const row = publishedPricingFor(model)!;
+      expect(row.dimensions?.inputTokens?.pricePerUnit).toBe(input);
+      expect(row.dimensions?.outputTokens?.pricePerUnit).toBe(output);
+      expect(row.dimensions?.cacheReadTokens?.pricePerUnit).toBe(cache);
+      expect(row.dimensions?.cacheWriteTokens).toBeUndefined();
+      expect(row.routingDimensions).toBeUndefined();
+      expect(computeCost(row, 'us-east-1', { inputTokens: 1000, cacheWriteTokens: 1 }).priced).toBe(false);
+    }
+    expect(publishedPricingFor('openai.unknown-future-model')).toBeUndefined();
+  });
+
+  it.each(['us-gov-west-1', 'cn-north-1', 'us-iso-east-1', 'eusc-de-east-1'])(
+    'does not apply reviewed commercial prices to %s', (region) => {
+      expect(publishedPricingFor('openai.gpt-6.1-sol', region)).toBeUndefined();
+      expect(publishedPricingFor('openai.gpt-5.4', region)).toBeUndefined();
+      expect(publishedPricingFor('stability.stable-outpaint-v1:0', region)).toBeUndefined();
+    },
+  );
+
+  it('applies the current commercial rates without the obsolete inferred India surcharge', () => {
+    expect(computeCost(publishedPricingFor('openai.gpt-5.6-terra'), 'ap-south-1',
+      { inputTokens: 1000 }).spendUsd).toBe(0.0022);
+    expect(computeCost(publishedPricingFor('zai.glm-5.3'), 'us-east-1',
+      { inputTokens: 1000 }, 0, 'global', 'priority').spendUsd).toBeCloseTo(0.00294, 8);
+  });
+
   it('bills all four Astra dimensions at the published geo rates', () => {
     const cost = computeCost(publishedPricingFor('openai.gpt-6-astra'), 'us-west-2', {
       inputTokens: 1000, outputTokens: 1000, cacheReadTokens: 1000, cacheWriteTokens: 1000,

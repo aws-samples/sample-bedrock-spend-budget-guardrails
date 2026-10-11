@@ -2,7 +2,7 @@
 
 ## Signal
 
-A live website fallback or manual override has not been reviewed for 30 days. This is separate from the daily refresher's execution health.
+A live website fallback, manual override, or catalog row with reviewed context/service-tier metadata has not been reviewed for 30 days. This is separate from the daily refresher's execution health. A new `fetchedAt` does not renew `verifiedAt`.
 
 ## Resolution
 

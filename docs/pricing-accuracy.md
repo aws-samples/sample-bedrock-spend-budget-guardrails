@@ -4,7 +4,7 @@ BBG prefers AWS Price List data. When commercial SKUs are absent, the refresher 
 
 ## Rates and usage
 
-- Frontier OpenAI prices include input, output, cache reads, and 30-minute cache writes. Global routing has separate rates.
+- OpenAI prices include the dimensions the specific model supports; unsupported explicit cache writes are not assigned a zero rate. Supported Global routing has separate rates.
 - `contextTiers` selects the rate for the whole request when input plus cache-read plus cache-write tokens reaches `minInputTokens`. For current OpenAI tiers, long-context rates start at 272,001 input tokens.
 - Explicit service-tier multipliers apply only where supported. An unsupported tier is flagged as unpriced instead of silently using Standard.
 - Any missing rate for an observed dimension makes an invocation partially unpriced; known dimensions still contribute spend.
@@ -23,7 +23,7 @@ Application metrics use `service=bbg, stage=<stage>`. Update custom dashboards t
 |---|---|
 | `PricingGapCount` | One daily gauge, including zero, for models unresolved by API or reviewed website fallback |
 | `PricingRefreshAge` | Age of the oldest live automatically refreshed row |
-| `PricingFallbackAge` | Age of the oldest live website review or manual override; alarm after 30 days |
+| `PricingFallbackAge` | Age of the oldest live website review, manual override, or reviewed catalog-tier metadata; alarm after 30 days |
 | `UnpricedInvocations` | Committed primary invocations with wholly or partially missing rates; profile/lens updates do not duplicate the count |
 | `MeterUsageMissing` | Invocation metadata with no supported counters; explicit failures without usage and zero streaming-start records are excluded |
 | `ReconciliationUnattributedSpend` | CUR dollars without caller identity, including models whose account-level totals reconcile |
@@ -54,3 +54,9 @@ For historical data, prepare a reviewed JSON plan using the `SpendCorrection` sc
 The runner verifies the credential account, writes the plan to the existing encrypted ledger bucket, and applies conditional DynamoDB transactions. It emits deterministic ledger objects with original effective dates. Rerunning the same plan recovers from an interrupted ledger write without applying money twice.
 
 Reconciliation compares `coalesce(effectiveat, recordedat)` with the billing watermark. Legacy records still use their original ingestion time. Keep unmatched billing estimates visible: changing estimates to zero or raising the alarm threshold does not repair missing billing data.
+
+Distinguish missing billing records from quantity-bearing records rated at zero.
+BBG's list-price estimate can differ from an account's effective billed cost.
+Check the applicable billing treatment and time period before classifying that
+difference as a metering defect or changing the estimate; a zero-cost row alone
+does not establish a permanent waiver for every model or future period.

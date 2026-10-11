@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Daily job that refreshes the `Pricing` DDB table by joining `bedrock:ListFoundationModels` (per metered region) against the AWS Pricing API across the three Bedrock service codes — `AmazonBedrockFoundationModels`, `AmazonBedrock`, and `AmazonBedrockService`. Produces the canonical per-`modelId` row the meter reads when costing every Bedrock invocation. Triggered by EventBridge Scheduler at `cron(0 3 * * ? *)` UTC; the Lambda lives in `us-east-1` because that's one of only three regions that host the Pricing API.
+Daily job that refreshes the `Pricing` DDB table by joining `bedrock:ListFoundationModels` (per metered region) against the `AmazonBedrockFoundationModels` and `AmazonBedrock` bulk catalogs, reviewed AWS website fallbacks, and the Pricing Query API. Produces the canonical per-`modelId` row the meter reads when costing every Bedrock invocation. Triggered by EventBridge Scheduler at `cron(0 3 * * ? *)` UTC. The Lambda runs in the deployment's home region; its Pricing API client targets `us-east-1`.
 
 ## Symptoms
 
 - CloudWatch alarm `dev-bbg-pricing-refresh-age` fires (`PricingRefreshAge > 36h`) — the daily run hasn't completed.
-- `PricingGapCount > 0` metric — `ListFoundationModels` returned models that have no priced SKU across any of the three service codes. Models surface on the Pricing UI as "Missing pricing"; admins can set manual overrides.
+- `PricingGapCount > 0` metric — discovered models did not resolve through the configured sources. This can mean a catalog publishing gap, a matcher/classifier defect, or a missing reviewed fallback. A successful invocation does not imply zero gaps.
 - Meter logs warning `unpriced invocation` and emits `UnpricedInvocations` for a real invocation against a model that was just released or that fell out of `ListFoundationModels` while still being callable.
 - Pricing page in the SPA shows stale `fetchedAt` timestamps (>24h old).
-- Logs in `/aws/lambda/dev-bbg-pricing-refresher`: `FoundationModels query failed`, `AmazonBedrock query failed`, `No pricing found across any dimension`.
+- Logs in the function's configured `LoggingConfig.LogGroup`: `FoundationModels query failed`, `AmazonBedrock query failed`, `No pricing found across any dimension`. The default `/aws/lambda/...` group can be an empty legacy group.
 
 ## Likely causes (in order)
 
@@ -21,12 +21,17 @@ Daily job that refreshes the `Pricing` DDB table by joining `bedrock:ListFoundat
 5. **New `usagetype` naming convention.** `AmazonBedrockFoundationModels` ships at least three concurrent conventions (CamelCase `USE1_InputTokenCount_Global-Units`, snake_case+`_standard` `input_tokens_standard`, `Million*BatchInputTokens`). When a new launch invents a fourth, `classifyFoundationModelsUsage` returns null and SKUs are skipped silently.
 6. **Cross-region inference profile (CRIS) confusion.** CRIS modelIds (`us.anthropic.claude-sonnet-4-6`) have NO Pricing API SKU. The meter strips the `us.`/`eu.`/`apac.`/`ap.` prefix before lookup — but if someone reports a CRIS gap, it's by design; the bare modelId row is what they want.
 7. **Nova short-name reconciliation gap.** A new Nova model (Nova X) ships and isn't in the static `nova-map.ts`. Pricing API returns a `model="Nova X"` SKU but we have no canonical `amazon.nova-x-v1:0` modelId to write under.
+8. **No catalog price and no reviewed fallback.** Discovery does not contain prices. Check the exact model's current AWS model card, then update `published-pricing.ts` with source provenance and tests. Do not copy an older model's cache rates or automatically renew a review date.
+9. **Unit or context-tier mismatch.** Token units can use `1k tokens` as well as `1K tokens`. Long-context SKUs must be retained separately using the reviewed model-specific boundary; they must not be collapsed into short-context prices.
 
 ## Investigation
 
 ```bash
-# Last invocation of the daily refresh.
-aws logs tail /aws/lambda/dev-bbg-pricing-refresher --since 36h --region us-west-2
+# Last invocation of the daily refresh (use your deployment region).
+BBG_LOG_GROUP=$(aws lambda get-function-configuration \
+  --function-name dev-bbg-pricing-refresher --region us-west-2 \
+  --query 'LoggingConfig.LogGroup' --output text)
+aws logs tail "$BBG_LOG_GROUP" --since 36h --region us-west-2
 
 # Schedule status (the scheduler lives in the Lambda's deploy region).
 aws scheduler get-schedule --name dev-bbg-pricing-refresh --region us-west-2

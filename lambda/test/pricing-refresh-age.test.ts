@@ -27,12 +27,25 @@ vi.mock('../src/shared/powertools.js', () => ({
 process.env.PRICING_TABLE = 'test-pricing';
 
 const { computePricingRefreshAgeSeconds } = await import('../src/pricing-refresher/index.js');
+const { metrics } = await import('../src/shared/powertools.js');
 
 const NOW = Date.parse('2026-07-30T00:00:00.000Z');
 const daysAgo = (n: number) => new Date(NOW - n * 86400_000).toISOString();
 
 describe('computePricingRefreshAgeSeconds', () => {
-  beforeEach(() => sendMock.mockReset());
+  beforeEach(() => {
+    sendMock.mockReset();
+    vi.mocked(metrics.addMetric).mockClear();
+  });
+
+  it('keeps review age visible for catalog prices with curated context/tier metadata', async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: [{ model: 'openai.gpt-6-astra', source: 'pricing-api',
+        fetchedAt: daysAgo(0.5), verifiedAt: daysAgo(45) }],
+    });
+    expect(await computePricingRefreshAgeSeconds(NOW, new Set(['openai.gpt-6-astra']))).toBe(43200);
+    expect(metrics.addMetric).toHaveBeenCalledWith('PricingFallbackAge', 'Seconds', 45 * 86400);
+  });
 
   it('ignores deprecated-model rows — a 60-day-old dead model does not pin the metric', async () => {
     sendMock.mockResolvedValueOnce({

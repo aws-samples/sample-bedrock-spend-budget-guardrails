@@ -2,6 +2,60 @@
 
 Bedrock pricing comes from the AWS Price List Query API. Three service codes — `AmazonBedrockFoundationModels`, `AmazonBedrock`, `AmazonBedrockService` — each with subtle inconsistencies. The `pricing-refresher` Lambda papers over them and produces a single canonical `Pricing[modelId]` row.
 
+## Current coverage and reviewed fallbacks (2026-10-11)
+
+Discovery is separate from pricing. `ListFoundationModels` can expose a model
+before its commercial prices appear in the bulk offers or Query API. The
+refresher cannot derive a price from the model ID, and a successful daily run
+does not mean every discovered model was priced.
+
+The source order is **bulk offers → reviewed AWS website fallback → Query API**.
+The fallback registry in [`published-pricing.ts`](../lambda/src/pricing-refresher/published-pricing.ts)
+is deliberately curated, not a runtime website scraper. A new model with no
+catalog SKU and no reviewed entry remains a visible `PricingGapCount` finding.
+Add an entry only after checking the exact model, routing options, units, cache
+dimensions, context boundary, and service tiers against its AWS source. A price
+entry does not establish endpoint coverage, account access, or model availability.
+The reviewed registry applies only to commercial regions; it does not substitute
+commercial rates for GovCloud, China, isolated, or sovereign-partition pricing.
+
+Verified public sources include:
+
+- [GPT-6.1 Sol](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html):
+  cache reads cost 5% of uncached input, versus GPT-6 Sol's 10%; Ultrafast costs
+  six times Standard. Do not copy the preceding model's rate table unchanged.
+- [GPT-6 Sol](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-sol.html)
+  and [GPT-6 Luna](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-luna.html):
+  distinct US geographic and Global rates, with long-context pricing above
+  272,000 input tokens.
+- [GPT-6 Astra](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html):
+  now has commercial catalog SKUs, including separate `long_ctx` variants.
+  These are stored in `contextTiers`, not collapsed into the cheapest
+  short-context rate. The context boundary and Ultrafast multiplier are checked
+  against the model card.
+- [GLM 5.3 and Stability image services](https://aws.amazon.com/bedrock/pricing/):
+  reviewed website rates cover catalog gaps. GLM 5.3 has separate US/Global
+  rates and documented Priority/Flex/Batch multipliers.
+- [GPT-5.4](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-54.html)
+  and [GPT-5.5](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-55.html):
+  no explicit cache-write price or Global option is invented. These models'
+  presence in discovery/pricing does not extend metering to the Mantle endpoint.
+
+`fetchedAt` records a refresh; `verifiedAt` records an actual source review.
+`PricingFallbackAge` also includes catalog rows that retain reviewed context
+boundaries or service-tier metadata. Never advance `verifiedAt` merely because
+the scheduled Lambda ran. Operator `source=override` rows remain protected;
+review or retire stale overrides explicitly rather than overwriting them.
+
+Nova 2.5 Sonic demonstrates a different failure: its catalog SKUs spell the unit
+`1k tokens`. Matching is case-insensitive and stored token units remain canonical
+`1K tokens`. Text and speech remain subject to the existing coarse-dimension
+approximation described below; this unit fix does not add per-modality metering.
+
+The older dated observations below are historical investigations. In particular,
+the July conclusion that every model had a catalog price, and the August blanket
+claim about proprietary OpenAI catalog absence, are no longer current.
+
 ## Verified facts (probed live 2026-05-13)
 
 ### Schemas

@@ -17,7 +17,6 @@
  *   tsx scripts/test-pricing-refresher.ts --all --json    # machine-readable {modelId: {region: rates}}
  */
 import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
-import { publishedPricingFor } from '../lambda/src/pricing-refresher/published-pricing';
 import { resolveModelPricing, type RegionalPricing } from '../lambda/src/pricing-refresher';
 import type { FoundationModelSummary } from '../lambda/src/pricing-refresher/cross-ref';
 
@@ -96,11 +95,9 @@ const main = async (): Promise<void> => {
     const rates = ratesOf(regional);
     if (Object.keys(rates).length > 0) {
       resolved[m.modelId] = rates;
-    } else if (publishedPricingFor(m.modelId)) {
-      // The handler prices these via the parent servicename (verified to
-      // resolve for all current feature-fallback models); not a gap.
-      viaFeatureFallback.push(m.modelId);
     } else {
+      // Registry membership alone is not coverage (for example, reviewed
+      // commercial rates must not hide a gap in another partition).
       gaps.push(m.modelId);
     }
     if (onlyModelId) {

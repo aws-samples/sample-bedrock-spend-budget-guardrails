@@ -10,18 +10,18 @@ with scripts/gen-third-party-licenses.mjs after dependency changes.
 
 ## License summary
 
-- MIT: 217
+- MIT: 215
 - Apache-2.0: 111
 - BSD-3-Clause: 16
 - ISC: 10
 - MIT-0: 5
 - BSD-2-Clause: 5
-- MPL-2.0: 2
+- MPL-2.0: 3
 - (MIT OR GPL-3.0-or-later): 1
 - BlueOak-1.0.0: 1
 - 0BSD: 1
 
-Total third-party packages: 369
+Total third-party packages: 368
 
 ## Packages
 
@@ -436,7 +436,7 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/clauderic/dnd-kit
 
-### @esbuild/darwin-arm64 0.28.1
+### @esbuild/linux-x64 0.28.1
 - License: MIT
 - Source: https://github.com/evanw/esbuild
 
@@ -492,11 +492,11 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/nodable/val-parsers
 
-### @oxc-project/types 0.149.0
+### @oxc-project/types 0.155.0
 - License: MIT
 - Source: https://github.com/oxc-project/oxc
 
-### @rolldown/binding-darwin-arm64 1.2.8
+### @rolldown/binding-linux-x64-gnu 1.2.15
 - License: MIT
 - Source: https://github.com/rolldown/rolldown
 
@@ -676,31 +676,31 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/vitejs/vite-plugin-react
 
-### @vitest/expect 4.1.11
+### @vitest/expect 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/mocker 4.1.11
+### @vitest/mocker 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/pretty-format 4.1.11
+### @vitest/pretty-format 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/runner 4.1.11
+### @vitest/runner 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/snapshot 4.1.11
+### @vitest/snapshot 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/spy 4.1.11
+### @vitest/spy 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
-### @vitest/utils 4.1.11
+### @vitest/utils 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 
@@ -800,7 +800,7 @@ Total third-party packages: 369
 - License: Apache-2.0
 - Source: https://github.com/cdklabs/cdk-nag
 
-### chai 6.2.2
+### chai 6.3.0
 - License: MIT
 - Source: https://github.com/chaijs/chai
 
@@ -984,14 +984,6 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/jprichardson/node-fs-extra
 
-### fsevents 2.3.2
-- License: MIT
-- Source: https://github.com/fsevents/fsevents
-
-### fsevents 2.3.3
-- License: MIT
-- Source: https://github.com/fsevents/fsevents
-
 ### function-bind 1.1.2
 - License: MIT
 - Source: https://github.com/Raynos/function-bind
@@ -1112,7 +1104,11 @@ Total third-party packages: 369
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 
-### lightningcss-darwin-arm64 1.33.0
+### lightningcss-linux-x64-gnu 1.33.0
+- License: MPL-2.0
+- Source: https://github.com/parcel-bundler/lightningcss
+
+### lightningcss-linux-x64-musl 1.33.0
 - License: MPL-2.0
 - Source: https://github.com/parcel-bundler/lightningcss
 
@@ -1168,7 +1164,7 @@ Total third-party packages: 369
 - License: MIT
 - Source: vercel/ms
 
-### nanoid 3.3.19
+### nanoid 3.3.20
 - License: MIT
 - Source: ai/nanoid
 
@@ -1224,7 +1220,7 @@ Total third-party packages: 369
 - License: Apache-2.0
 - Source: https://github.com/microsoft/playwright
 
-### postcss 8.5.28
+### postcss 8.5.32
 - License: MIT
 - Source: postcss/postcss
 
@@ -1272,7 +1268,7 @@ Total third-party packages: 369
 - License: MIT
 - Source: sindresorhus/redent
 
-### rolldown 1.2.8
+### rolldown 1.2.15
 - License: MIT
 - Source: https://github.com/rolldown/rolldown
 
@@ -1376,7 +1372,7 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/SuperchupuDev/tinyglobby
 
-### tinyrainbow 3.1.1
+### tinyrainbow 3.2.0
 - License: MIT
 - Source: https://github.com/tinylibs/tinyrainbow
 
@@ -1432,11 +1428,11 @@ Total third-party packages: 369
 - License: MIT
 - Source: https://github.com/uuidjs/uuid
 
-### vite 8.3.0
+### vite 8.3.5
 - License: MIT
 - Source: https://github.com/vitejs/vite
 
-### vitest 4.1.11
+### vitest 4.1.12
 - License: MIT
 - Source: https://github.com/vitest-dev/vitest
 

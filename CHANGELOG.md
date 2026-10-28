@@ -8,6 +8,12 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-10-28
+
+### Security
+
+- Updated Vite to 8.3.5 and Vitest to 4.1.12 to resolve advisories in the development server and test runner, including file exposure outside `server.fs.allow` and unauthenticated mock registration. These packages are used only for local development, tests, and building the web app; no configuration or operator action is needed.
+
 ## [1.4.2] - 2026-10-11
 
 ### Fixed
@@ -121,7 +127,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.3
 [1.4.2]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.2
 [1.4.1]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.1
 [1.4.0]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.0

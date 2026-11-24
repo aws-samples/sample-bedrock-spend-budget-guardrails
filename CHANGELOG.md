@@ -8,6 +8,12 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.5] - 2026-11-24
+
+### Security
+
+- Updated `aws-cdk-lib` to 2.278.0 to resolve a denial-of-service advisory in its bundled `minimatch`, which CDK uses to match asset file patterns while the app synthesizes. It is not part of the deployed functions or the web app. The CDK CLI is updated to 2.1149.0 to match, because the new library writes a newer cloud assembly format. The `npx cdk` commands in the README use the CLI pinned in this repository, so no configuration or operator action is needed.
+
 ## [1.4.4] - 2026-11-24
 
 ### Security
@@ -133,7 +139,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.4...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.5...HEAD
+[1.4.5]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.5
 [1.4.4]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.4
 [1.4.3]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.3
 [1.4.2]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.2

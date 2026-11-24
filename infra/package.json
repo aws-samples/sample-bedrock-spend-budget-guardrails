@@ -13,7 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-organizations": "^3.1053.0",
     "@aws-sdk/client-ssm": "^3.700.0",
-    "aws-cdk-lib": "^2.273.0",
+    "aws-cdk-lib": "^2.278.0",
     "cdk-nag": "^2.34.0",
     "constructs": "^10.4.0",
     "source-map-support": "^0.5.21"

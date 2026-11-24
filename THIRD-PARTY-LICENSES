@@ -488,7 +488,7 @@ Total third-party packages: 368
 - License: Apache-2.0
 - Source: https://github.com/material-foundation/material-color-utilities
 
-### @nodable/entities 3.0.0
+### @nodable/entities 3.1.0
 - License: MIT
 - Source: https://github.com/nodable/val-parsers
 
@@ -956,11 +956,11 @@ Total third-party packages: 368
 - License: Apache-2.0
 - Source: https://github.com/mmkal/expect-type
 
-### fast-xml-builder 1.3.0
+### fast-xml-builder 1.3.1
 - License: MIT
 - Source: https://github.com/NaturalIntelligence/fast-xml-builder
 
-### fast-xml-parser 5.10.1
+### fast-xml-parser 5.12.0
 - License: MIT
 - Source: https://github.com/NaturalIntelligence/fast-xml-parser
 
@@ -1068,7 +1068,7 @@ Total third-party packages: 368
 - License: MIT
 - Source: https://github.com/mathiasbynens/is-potential-custom-element-name
 
-### is-unsafe 2.0.0
+### is-unsafe 2.0.3
 - License: MIT
 - Source: https://github.com/NaturalIntelligence/is-unsafe
 
@@ -1344,7 +1344,7 @@ Total third-party packages: 368
 - License: MIT
 - Source: sindresorhus/strip-indent
 
-### strnum 2.4.1
+### strnum 2.5.1
 - License: MIT
 - Source: https://github.com/NaturalIntelligence/strnum
 

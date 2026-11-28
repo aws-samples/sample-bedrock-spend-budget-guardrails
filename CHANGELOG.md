@@ -8,6 +8,19 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-11-28
+
+### Added
+
+- Pricing for Kimi K3.1, from its AWS model card: US and India cross-Region rates, the lower Global rate, and the Priority (1.75x) and Flex (0.5x) tiers. It is not yet in the AWS Price List, so before this its usage was metered as unpriced.
+- Model-card reviews for GPT-6.2 Astra, GPT-6.2 Sol and GPT-6.1 Terra. The Price List already supplies their Standard rates; the review adds the 272K-token boundary, so requests above it bill at the published long-context rates instead of the short-context ones. GPT-6.2 Astra's Ultrafast tier is priced at 3x Standard through February 28, 2027 and 6x from March 1, 2027; the daily pricing refresh switches it automatically.
+- A long-context boundary for Claude Haiku 5.5 (prompts over 100,000 tokens), so its long-context rates from the Price List apply.
+
+### Fixed
+
+- Usage through inference profiles named `jp.`, `au.`, `ca.` or `us-gov.` now prices as the base model and counts toward that model's budgets. Before, it was metered as unpriced under the profile id.
+- Long-context Price List SKUs spelled `long-ctx` are treated as a long-context tier instead of competing with the Standard rate.
+
 ## [1.4.6] - 2026-11-28
 
 ### Fixed
@@ -146,7 +159,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.6...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.7...HEAD
+[1.4.7]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.7
 [1.4.6]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.6
 [1.4.5]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.5
 [1.4.4]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.4

@@ -6,6 +6,10 @@ const capturedLumaSkus = JSON.parse(readFileSync(new URL('./fixtures/luma-ray-pr
 const capturedAstraSkus = JSON.parse(readFileSync(new URL('./fixtures/pricing/astra-context-tiers.json', import.meta.url), 'utf8'));
 const capturedSonicSkus = JSON.parse(readFileSync(new URL('./fixtures/pricing/nova-25-sonic.json', import.meta.url), 'utf8'));
 let includeOctoberSkus = false;
+// Live us-east-1 Price List SKUs captured 2026-11-28 (public price data).
+const capturedAstra62Skus = JSON.parse(readFileSync(new URL('./fixtures/pricing/gpt-62-astra-use1.json', import.meta.url), 'utf8'));
+const capturedHaiku55Skus = JSON.parse(readFileSync(new URL('./fixtures/pricing/haiku-55-long-context-use1.json', import.meta.url), 'utf8'));
+let includeNovemberSkus = false;
 let reverseOctoberSkus = false;
 let omitLongContextCacheRead = false;
 
@@ -135,7 +139,8 @@ vi.mock('../src/pricing-refresher/bulk-offer.js', async (importOriginal) => {
       if (serviceCode === 'AmazonBedrock') return [...AB_SKUS, ...capturedGrokSkus, ...capturedReelSkus,
         ...(includeOctoberSkus ? capturedSonicSkus : [])];
       if (serviceCode === 'AmazonBedrockFoundationModels') return [...FM_SKUS, ...capturedLumaSkus,
-        ...(includeOctoberSkus ? astra : [])];
+        ...(includeOctoberSkus ? astra : []),
+        ...(includeNovemberSkus ? [...capturedAstra62Skus, ...capturedHaiku55Skus] : [])];
       return [];
     }),
   };
@@ -175,6 +180,7 @@ const putModels = (): string[] =>
 describe('pricing-refresher — bulk-primary contract', () => {
   beforeEach(() => {
     includeOctoberSkus = false;
+    includeNovemberSkus = false;
     reverseOctoberSkus = false;
     omitLongContextCacheRead = false;
     pricingSendMock.mockReset();
@@ -211,6 +217,57 @@ describe('pricing-refresher — bulk-primary contract', () => {
       cacheWriteTokens: 1000, outputTokens: 1000 }, 0, 'global').spendUsd).toBeCloseTo(0.66002, 8);
     expect(row.serviceTierMultipliers.ultrafast).toBe(6);
     expect(row.verifiedAt).toBe('2026-10-11T00:00:00.000Z');
+  });
+
+  it('keeps GPT-6.2 Astra catalog long-context and Ultrafast prices with the reviewed card', async () => {
+    includeNovemberSkus = true;
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'openai.gpt-6.2-astra', modelName: 'GPT-6.2 Astra', providerName: 'OpenAI' },
+    ] });
+    const result = await (await importHandler())();
+    expect(result.gaps).toEqual([]);
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'openai.gpt-6.2-astra')![0].input.Item;
+    expect(row.source).toBe('pricing-api');
+    expect(row.dimensions.inputTokens.pricePerUnit).toBe(0.0088);
+    expect(row.dimensions.cacheWriteTokens.pricePerUnit).toBe(0.011);
+    expect(row.routingDimensions.global.outputTokens.pricePerUnit).toBe(0.04);
+    // Before this review the catalog's long_ctx SKUs were skipped: no boundary.
+    expect(row.contextTiers).toHaveLength(1);
+    expect(row.contextTiers[0].minInputTokens).toBe(272001);
+    expect(row.contextTiers[0].dimensions.inputTokens.pricePerUnit).toBe(0.0176);
+    expect(row.contextTiers[0].dimensions.outputTokens.pricePerUnit).toBe(0.066);
+    expect(row.contextTiers[0].routingDimensions.global.cacheReadTokens.pricePerUnit).toBe(0.0008);
+    // Ultrafast SKUs never become the Standard rate; the card multiplier prices them.
+    expect(row.serviceTierMultipliers).toEqual({ ultrafast: 3 });
+    expect(row.sourceUrl).toContain('model-card-openai-gpt-6-2-astra.html');
+    const { computeCost } = await import('../src/shared/pricing.js');
+    expect(computeCost(row, 'us-east-1', { inputTokens: 300000, outputTokens: 1000 }, 0, 'us').spendUsd)
+      .toBeCloseTo(300 * 0.0176 + 0.066, 8);
+    expect(computeCost(row, 'us-east-1', { inputTokens: 1000 }, 0, 'us', 'ultrafast').spendUsd)
+      .toBeCloseTo(0.0264, 8);
+  });
+
+  it('applies a reviewed long-context boundary to catalog-priced Claude Haiku 5.5', async () => {
+    includeNovemberSkus = true;
+    bedrockSendMock.mockResolvedValue({ modelSummaries: [
+      { modelId: 'anthropic.claude-haiku-5-5', modelName: 'Claude Haiku 5.5', providerName: 'Anthropic' },
+    ] });
+    await (await importHandler())();
+    const row = ddbSendMock.mock.calls.find(([c]) =>
+      c._kind === 'PutCommand' && c.input.Item.model === 'anthropic.claude-haiku-5-5')![0].input.Item;
+    expect(row.source).toBe('pricing-api');
+    expect(row.dimensions.inputTokens.pricePerUnit).toBe(0.00011);
+    expect(row.contextTiers[0].minInputTokens).toBe(100001);
+    expect(row.contextTiers[0].dimensions.inputTokens.pricePerUnit).toBe(0.00055);
+    // Same tier, two TTLs: the cheaper 5-minute write stays the default.
+    expect(row.contextTiers[0].dimensions.cacheWriteTokens.pricePerUnit).toBe(0.0006875);
+    expect(row.contextTiers[0].routingDimensions.global.outputTokens.pricePerUnit).toBe(0.0025);
+    expect(row.sourceUrl).toContain('model-card-anthropic-claude-haiku-5-5.html');
+    expect(row.serviceTierMultipliers).toBeUndefined();
+    const { computeCost } = await import('../src/shared/pricing.js');
+    expect(computeCost(row, 'us-east-1', { inputTokens: 100000 }, 0, 'global').spendUsd).toBeCloseTo(0.01, 8);
+    expect(computeCost(row, 'us-east-1', { inputTokens: 100001 }, 0, 'global').spendUsd).toBe(0.050001); // microdollars
   });
 
   it('accepts the actual lowercase token unit from Nova 2.5 Sonic SKUs', async () => {

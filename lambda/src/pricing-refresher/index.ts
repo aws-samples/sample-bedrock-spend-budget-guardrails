@@ -7,7 +7,7 @@ import {
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { dimensionsOf, type Dimension, type DimensionKind, type PricingRow } from '../shared/pricing.js';
-import { publishedPricingFor } from './published-pricing.js';
+import { contextBoundaryFor, publishedPricingFor } from './published-pricing.js';
 import { logger, metrics, MetricUnit } from '../shared/powertools.js';
 import { getConfiguredMemoryMb, recordSelfCost } from '../shared/self-cost.js';
 import {
@@ -284,7 +284,7 @@ const recordTokenPrice = (
   // not as a candidate for the default tier (including in sparse catalogs).
   if (/[_-]ultrafast(?:[_-]|$)/i.test(usagetype)) return;
   let row = ensureRegion(table, region);
-  if (/[_-]long_ctx(?:[_-]|$)/i.test(usagetype)) {
+  if (/[_-]long[_-]ctx(?:[_-]|$)/i.test(usagetype)) {
     // The SKU names the tier but not its boundary. Only use an independently
     // reviewed boundary for this exact model; never guess for an unknown model.
     if (contextMinInputTokens === undefined) {
@@ -467,7 +467,7 @@ const recordFoundationModelsSkus = (
     if (tokenKind) {
       const per1k = toPricePer1k(priced.price, 'AmazonBedrockFoundationModels');
       recordTokenPrice(table, region, tokenKind, per1k, usage,
-        modelId ? publishedPricingFor(modelId, region)?.contextTiers?.[0]?.minInputTokens : undefined);
+        modelId ? contextBoundaryFor(modelId, region)?.minInputTokens : undefined);
       continue;
     }
 
@@ -847,6 +847,8 @@ const writePricingRow = async (
   > = {};
   const published = Object.keys(regional)
     .map((region) => publishedPricingFor(modelId, region)).find((row) => row !== undefined);
+  const reviewedBoundary = Object.keys(regional)
+    .map((region) => contextBoundaryFor(modelId, region)).find((row) => row !== undefined);
   const usesWebsite = Object.values(regional).some((r) => r.websiteFallback);
   const contextTiers = new Map<number, NonNullable<PricingRow['contextTiers']>[number]>();
 
@@ -927,6 +929,9 @@ const writePricingRow = async (
         ...(published && (usesWebsite || contextTiers.size || published.serviceTierMultipliers) ? {
           sourceUrl: published.sourceUrl,
           verifiedAt: published.verifiedAt,
+        } : !published && contextTiers.size && reviewedBoundary ? {
+          sourceUrl: reviewedBoundary.sourceUrl,
+          verifiedAt: reviewedBoundary.verifiedAt,
         } : {}),
         ...(published?.serviceTierMultipliers ? { serviceTierMultipliers: published.serviceTierMultipliers }
           : modelId === 'xai.grok-4.6' ? { serviceTierMultipliers: { priority: 1.75, flex: 0.5 } } : {}),

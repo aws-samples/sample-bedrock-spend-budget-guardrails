@@ -6,6 +6,8 @@ BBG prefers AWS Price List data. When commercial SKUs are absent, the refresher 
 
 - OpenAI prices include the dimensions the specific model supports; unsupported explicit cache writes are not assigned a zero rate. Supported Global routing has separate rates.
 - `contextTiers` selects the rate for the whole request when input plus cache-read plus cache-write tokens reaches `minInputTokens`. For current OpenAI tiers, long-context rates start at 272,001 input tokens.
+- The Price List names long-context SKUs but not the boundary that turns them on. The refresher uses a long-context SKU only when `published-pricing.ts` carries a reviewed boundary for that model (a full card entry, or a boundary-only entry such as Claude Haiku 5.5 at 100,001 tokens). Otherwise it skips the SKU and logs it, so a long request bills at the short-context rate.
+- Model-card service-tier multipliers can carry a published change date (GPT-6.2 Astra Ultrafast: 3x through 2027-02-28, then 6x). The daily refresh writes the multiplier in force that day.
 - Explicit service-tier multipliers apply only where supported. An unsupported tier is flagged as unpriced instead of silently using Standard.
 - Any missing rate for an observed dimension makes an invocation partially unpriced; known dimensions still contribute spend.
 - Known single-image Stability APIs use one generation for successful synchronous invocation metadata with an output content type when counters are absent. Explicit zero counters and errors never trigger this fallback. Other records with no supported counters emit `MeterUsageMissing`; explicit failures without usage are excluded. Error records with nonzero counters still enter metering.

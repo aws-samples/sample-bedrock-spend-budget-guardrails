@@ -35,13 +35,13 @@ const providerOf = (modelId: string | undefined): string => canonicalProvider(un
  */
 const geographyOf = (modelId: string | undefined, profileArn: string): string => {
   if (modelId) {
-    const m = modelId.match(/^(us|eu|apac|ap|global)\./);
+    const m = modelId.match(/^(us-gov|us|eu|apac|ap|in|ca|au|jp|global)\./);
     if (m) return m[1];
   }
   // Fallback: the ARN's last segment (the inference profile ID) often
   // carries the same prefix.
   const slug = profileArn.split('/').slice(-1)[0] ?? '';
-  const m = slug.match(/^(us|eu|apac|ap|global)\./);
+  const m = slug.match(/^(us-gov|us|eu|apac|ap|in|ca|au|jp|global)\./);
   return m?.[1] ?? '—';
 };
 

@@ -23,7 +23,7 @@ export const parseTarget = (target: string): { display: string; kind: 'model' | 
  *   us.anthropic.claude-haiku-4-5-20251001-v1:0 → "Claude Haiku 4.5"
  */
 export const friendlyModelName = (modelId: string): string => {
-  const stripped = modelId.replace(/^(us|eu|apac|ap|global)\./, '');
+  const stripped = modelId.replace(/^(us-gov|us|eu|apac|ap|in|ca|au|jp|global)\./, '');
   const segments = stripped.split('.');
   const provider = segments[0] ?? '';
   const rest = segments.slice(1).join('.');

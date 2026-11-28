@@ -1,0 +1,822 @@
+[
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache read input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_read_tokens_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "8FP5E8EDA6KXE8UU"
+  },
+  "terms": {
+   "OnDemand": {
+    "8FP5E8EDA6KXE8UU.4799GE89SK": {
+     "priceDimensions": {
+      "8FP5E8EDA6KXE8UU.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Read Tokens - Standard, Global",
+       "appliesTo": [],
+       "rateCode": "8FP5E8EDA6KXE8UU.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.0100000000"
+       }
+      }
+     },
+     "sku": "8FP5E8EDA6KXE8UU",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache read input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_read_tokens_long_ctx_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "MDMT744HMHCN4SWC"
+  },
+  "terms": {
+   "OnDemand": {
+    "MDMT744HMHCN4SWC.4799GE89SK": {
+     "priceDimensions": {
+      "MDMT744HMHCN4SWC.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Read Tokens - Standard, Long Context, Global",
+       "appliesTo": [],
+       "rateCode": "MDMT744HMHCN4SWC.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.0500000000"
+       }
+      }
+     },
+     "sku": "MDMT744HMHCN4SWC",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache read input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_read_tokens_long_ctx_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "XCA8KP4W9DAXTNDB"
+  },
+  "terms": {
+   "OnDemand": {
+    "XCA8KP4W9DAXTNDB.4799GE89SK": {
+     "priceDimensions": {
+      "XCA8KP4W9DAXTNDB.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Read Tokens - Standard, Long Context",
+       "appliesTo": [],
+       "rateCode": "XCA8KP4W9DAXTNDB.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.0550000000"
+       }
+      }
+     },
+     "sku": "XCA8KP4W9DAXTNDB",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache read input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_read_tokens_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "U8VNEEFYKPCVZFB5"
+  },
+  "terms": {
+   "OnDemand": {
+    "U8VNEEFYKPCVZFB5.4799GE89SK": {
+     "priceDimensions": {
+      "U8VNEEFYKPCVZFB5.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Read Tokens - Standard",
+       "appliesTo": [],
+       "rateCode": "U8VNEEFYKPCVZFB5.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.0110000000"
+       }
+      }
+     },
+     "sku": "U8VNEEFYKPCVZFB5",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_1h_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "QMZ693GXPNRSQRMV"
+  },
+  "terms": {
+   "OnDemand": {
+    "QMZ693GXPNRSQRMV.4799GE89SK": {
+     "priceDimensions": {
+      "QMZ693GXPNRSQRMV.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens (1h TTL) - Standard, Global",
+       "appliesTo": [],
+       "rateCode": "QMZ693GXPNRSQRMV.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.2000000000"
+       }
+      }
+     },
+     "sku": "QMZ693GXPNRSQRMV",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_1h_long_ctx_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "GVZFQ5E2J3BRKEG3"
+  },
+  "terms": {
+   "OnDemand": {
+    "GVZFQ5E2J3BRKEG3.4799GE89SK": {
+     "priceDimensions": {
+      "GVZFQ5E2J3BRKEG3.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens (1h TTL) - Standard, Long Context, Global",
+       "appliesTo": [],
+       "rateCode": "GVZFQ5E2J3BRKEG3.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "1.0000000000"
+       }
+      }
+     },
+     "sku": "GVZFQ5E2J3BRKEG3",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_1h_long_ctx_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "M3CX8DFV3V8HNT2G"
+  },
+  "terms": {
+   "OnDemand": {
+    "M3CX8DFV3V8HNT2G.4799GE89SK": {
+     "priceDimensions": {
+      "M3CX8DFV3V8HNT2G.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens (1h TTL) - Standard, Long Context",
+       "appliesTo": [],
+       "rateCode": "M3CX8DFV3V8HNT2G.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "1.1000000000"
+       }
+      }
+     },
+     "sku": "M3CX8DFV3V8HNT2G",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_1h_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "AAZG88FS4RRJD2AH"
+  },
+  "terms": {
+   "OnDemand": {
+    "AAZG88FS4RRJD2AH.4799GE89SK": {
+     "priceDimensions": {
+      "AAZG88FS4RRJD2AH.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens (1h TTL) - Standard",
+       "appliesTo": [],
+       "rateCode": "AAZG88FS4RRJD2AH.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.2200000000"
+       }
+      }
+     },
+     "sku": "AAZG88FS4RRJD2AH",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "CV39UEQ78VU65KM9"
+  },
+  "terms": {
+   "OnDemand": {
+    "CV39UEQ78VU65KM9.4799GE89SK": {
+     "priceDimensions": {
+      "CV39UEQ78VU65KM9.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens - Standard, Global",
+       "appliesTo": [],
+       "rateCode": "CV39UEQ78VU65KM9.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.1250000000"
+       }
+      }
+     },
+     "sku": "CV39UEQ78VU65KM9",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_long_ctx_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "G2KF4HARNER2AXE4"
+  },
+  "terms": {
+   "OnDemand": {
+    "G2KF4HARNER2AXE4.4799GE89SK": {
+     "priceDimensions": {
+      "G2KF4HARNER2AXE4.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens - Standard, Long Context, Global",
+       "appliesTo": [],
+       "rateCode": "G2KF4HARNER2AXE4.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.6250000000"
+       }
+      }
+     },
+     "sku": "G2KF4HARNER2AXE4",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_long_ctx_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "QEWYH64DJ7XF8R7P"
+  },
+  "terms": {
+   "OnDemand": {
+    "QEWYH64DJ7XF8R7P.4799GE89SK": {
+     "priceDimensions": {
+      "QEWYH64DJ7XF8R7P.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens - Standard, Long Context",
+       "appliesTo": [],
+       "rateCode": "QEWYH64DJ7XF8R7P.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.6875000000"
+       }
+      }
+     },
+     "sku": "QEWYH64DJ7XF8R7P",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Prompt cache write input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_cache_write_tokens_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "SUN5BR5NYRKSKR7N"
+  },
+  "terms": {
+   "OnDemand": {
+    "SUN5BR5NYRKSKR7N.4799GE89SK": {
+     "priceDimensions": {
+      "SUN5BR5NYRKSKR7N.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Cache Write Tokens - Standard",
+       "appliesTo": [],
+       "rateCode": "SUN5BR5NYRKSKR7N.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.1375000000"
+       }
+      }
+     },
+     "sku": "SUN5BR5NYRKSKR7N",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_input_tokens_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "CT2JY6DA5N94ZAXN"
+  },
+  "terms": {
+   "OnDemand": {
+    "CT2JY6DA5N94ZAXN.4799GE89SK": {
+     "priceDimensions": {
+      "CT2JY6DA5N94ZAXN.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Input Tokens - Standard, Global",
+       "appliesTo": [],
+       "rateCode": "CT2JY6DA5N94ZAXN.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.1000000000"
+       }
+      }
+     },
+     "sku": "CT2JY6DA5N94ZAXN",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_input_tokens_long_ctx_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "E7TVM9F3MW6M99X9"
+  },
+  "terms": {
+   "OnDemand": {
+    "E7TVM9F3MW6M99X9.4799GE89SK": {
+     "priceDimensions": {
+      "E7TVM9F3MW6M99X9.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Input Tokens - Standard, Long Context, Global",
+       "appliesTo": [],
+       "rateCode": "E7TVM9F3MW6M99X9.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.5000000000"
+       }
+      }
+     },
+     "sku": "E7TVM9F3MW6M99X9",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_input_tokens_long_ctx_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "HWV4P4XWUH8AFBTY"
+  },
+  "terms": {
+   "OnDemand": {
+    "HWV4P4XWUH8AFBTY.4799GE89SK": {
+     "priceDimensions": {
+      "HWV4P4XWUH8AFBTY.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Input Tokens - Standard, Long Context",
+       "appliesTo": [],
+       "rateCode": "HWV4P4XWUH8AFBTY.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.5500000000"
+       }
+      }
+     },
+     "sku": "HWV4P4XWUH8AFBTY",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Input tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_input_tokens_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "GWDHRAKM6RFD2XYJ"
+  },
+  "terms": {
+   "OnDemand": {
+    "GWDHRAKM6RFD2XYJ.4799GE89SK": {
+     "priceDimensions": {
+      "GWDHRAKM6RFD2XYJ.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Input Tokens - Standard",
+       "appliesTo": [],
+       "rateCode": "GWDHRAKM6RFD2XYJ.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.1100000000"
+       }
+      }
+     },
+     "sku": "GWDHRAKM6RFD2XYJ",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Output tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_output_tokens_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "9C6E7ATQE23Q4W66"
+  },
+  "terms": {
+   "OnDemand": {
+    "9C6E7ATQE23Q4W66.4799GE89SK": {
+     "priceDimensions": {
+      "9C6E7ATQE23Q4W66.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Output Tokens - Standard, Global",
+       "appliesTo": [],
+       "rateCode": "9C6E7ATQE23Q4W66.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.5000000000"
+       }
+      }
+     },
+     "sku": "9C6E7ATQE23Q4W66",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Output tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_output_tokens_long_ctx_global_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "2GHZ832VV8MGPU8X"
+  },
+  "terms": {
+   "OnDemand": {
+    "2GHZ832VV8MGPU8X.4799GE89SK": {
+     "priceDimensions": {
+      "2GHZ832VV8MGPU8X.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Output Tokens - Standard, Long Context, Global",
+       "appliesTo": [],
+       "rateCode": "2GHZ832VV8MGPU8X.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "2.5000000000"
+       }
+      }
+     },
+     "sku": "2GHZ832VV8MGPU8X",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Output tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_output_tokens_long_ctx_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "RKX4V7MD8AVBAZFQ"
+  },
+  "terms": {
+   "OnDemand": {
+    "RKX4V7MD8AVBAZFQ.4799GE89SK": {
+     "priceDimensions": {
+      "RKX4V7MD8AVBAZFQ.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Output Tokens - Standard, Long Context",
+       "appliesTo": [],
+       "rateCode": "RKX4V7MD8AVBAZFQ.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "2.7500000000"
+       }
+      }
+     },
+     "sku": "RKX4V7MD8AVBAZFQ",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ },
+ {
+  "product": {
+   "productFamily": "Amazon Bedrock",
+   "attributes": {
+    "regionCode": "us-east-1",
+    "inferenceType": "Output tokens",
+    "feature": "On-demand Inference",
+    "provider": "Anthropic",
+    "usagetype": "USE1-MP:USE1_output_tokens_standard-Units",
+    "locationType": "AWS Region",
+    "location": "US East (N. Virginia)",
+    "model": "Claude Haiku 5.5",
+    "servicename": "Claude Haiku 5.5 (Amazon Bedrock Edition)",
+    "operation": ""
+   },
+   "sku": "KYPW3D8EBWFD83XS"
+  },
+  "terms": {
+   "OnDemand": {
+    "KYPW3D8EBWFD83XS.4799GE89SK": {
+     "priceDimensions": {
+      "KYPW3D8EBWFD83XS.4799GE89SK.6YS6EN2CT7": {
+       "unit": "1M tokens",
+       "endRange": "Inf",
+       "description": "AWS Marketplace software usage|us-east-1|Output Tokens - Standard",
+       "appliesTo": [],
+       "rateCode": "KYPW3D8EBWFD83XS.4799GE89SK.6YS6EN2CT7",
+       "beginRange": "0",
+       "pricePerUnit": {
+        "USD": "0.5500000000"
+       }
+      }
+     },
+     "sku": "KYPW3D8EBWFD83XS",
+     "effectiveDate": "2026-11-01T00:00:00Z",
+     "offerTermCode": "4799GE89SK",
+     "termAttributes": {}
+    }
+   }
+  }
+ }
+]

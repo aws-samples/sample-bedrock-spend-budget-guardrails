@@ -48,7 +48,7 @@ const titleCase = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slic
  * namespace before the first remaining `.`.
  */
 const prefixOfModelId = (modelId: string): string => {
-  const stripped = modelId.replace(/^(us|eu|apac|ap|global)\./, '');
+  const stripped = modelId.replace(/^(us-gov|us|eu|apac|ap|in|ca|au|jp|global)\./, '');
   const dot = stripped.indexOf('.');
   return (dot > 0 ? stripped.slice(0, dot) : stripped).toLowerCase();
 };

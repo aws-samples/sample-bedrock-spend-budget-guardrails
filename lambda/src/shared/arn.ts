@@ -140,6 +140,14 @@ export const canonicalizeCurPrincipal = (raw: string): string => {
 };
 
 /**
+ * Geography prefixes of system-defined cross-Region inference profiles
+ * (`us.`, `eu.`, `apac.`, `jp.`, `au.`, `ca.`, `in.`, `us-gov.`, `global.`).
+ * An unknown prefix would leave the model id unstripped, so its pricing lookup
+ * would miss and the usage would be metered as unpriced under a separate target.
+ */
+const CRIS_PREFIX = /^(us-gov|us|eu|apac|ap|in|ca|au|jp|global)\./;
+
+/**
  * Strips the CRIS regional prefix (`us.`, `eu.`, `apac.`, `ap.`) from a
  * Bedrock model ID so the meter can find the bare-model SKU in the
  * Pricing table. Cross-region inference profiles are billed at the
@@ -157,7 +165,7 @@ export const canonicalizeCurPrincipal = (raw: string): string => {
  * key (`model#<bare>`) so budgets are per-model regardless of routing.
  */
 export const stripCrisPrefix = (modelId: string): string =>
-  modelId.replace(/^(us|eu|apac|ap|in|global)\./, '');
+  modelId.replace(CRIS_PREFIX, '');
 
 /**
  * Extracts the inference routing mode from a (possibly prefixed) Bedrock
@@ -170,4 +178,4 @@ export const stripCrisPrefix = (modelId: string): string =>
  * dimensions, so passing `us`/`eu` through costs nothing.
  */
 export const routingModeOf = (modelId: string): string | undefined =>
-  /^(us|eu|apac|ap|in|global)\./.exec(modelId)?.[1];
+  CRIS_PREFIX.exec(modelId)?.[1];

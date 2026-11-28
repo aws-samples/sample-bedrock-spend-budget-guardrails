@@ -532,7 +532,7 @@ sample-bedrock-spend-budget-guardrails/
 - **cdk-nag** AwsSolutions checks gating CI
 
 ### Compute / data
-- **DynamoDB** hot path: `Budgets`, `RunningSpend`, `IdentityCache`, `Pricing`, `InferenceProfiles`, `PendingMeter`, `AgentSessions`, `PrincipalsSeen`, `PrincipalActivity`, `RateCounters`, `PasskeyNicknames`. On-demand, PITR, KMS-CMK.
+- **DynamoDB** hot path: `Budgets`, `RunningSpend`, `IdentityCache`, `Pricing`, `InferenceProfiles`, `PendingMeter`, `MeterDedup`, `AgentSessions`, `PrincipalsSeen`, `PrincipalActivity`, `RateCounters`, `PasskeyNicknames`. On-demand, PITR, KMS-CMK.
 - **Lambda** (Node 20, ARM64, Powertools): meter, identity-cache, enforcement, ledger-writer, pricing-refresher, org-discount-resolver, inference-profile-refresher, cur-reconciler, period-rollover, notify, cwl-forwarder, pre-token-gen, budgets-action-sync, plus per-route API handlers.
 - **S3 + Glue + Athena** ledger for ad-hoc reporting; JSONL with partition projection.
 - **EventBridge Scheduler** for the monthly period rollover, the daily pricing refresh, and the hourly org-discount resolve.

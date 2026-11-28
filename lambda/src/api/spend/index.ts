@@ -1,4 +1,4 @@
-import { QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, ScanCommand, type QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { ddb } from '../../shared/ddb.js';
 import { periodFor, WINDOWS, type Window } from '../../shared/period.js';
@@ -6,6 +6,30 @@ import { callerPrincipalKey, callerScope, json, requireAdmin, scopeAllows } from
 import { accountFromPrincipal } from '../../shared/iam-cross-account.js';
 
 const RUNNING_SPEND_TABLE = process.env.RUNNING_SPEND_TABLE!;
+
+/**
+ * Every page of a Query. DynamoDB stops each page after reading 1 MB, before
+ * any filter runs, so one page can hold none of the matching rows.
+ */
+const queryAll = async (input: QueryCommandInput): Promise<SpendRow[]> => {
+  const items: SpendRow[] = [];
+  let cursor: Record<string, unknown> | undefined;
+  do {
+    const r = await ddb.send(new QueryCommand({ ...input, ExclusiveStartKey: cursor }));
+    items.push(...((r.Items ?? []) as SpendRow[]));
+    cursor = r.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (cursor);
+  return items;
+};
+
+/** The caller's own rows for one period: a Query on their partition, every page. */
+const myRows = (me: string, period: string): Promise<SpendRow[]> =>
+  queryAll({
+    TableName: RUNNING_SPEND_TABLE,
+    KeyConditionExpression: 'principal = :me',
+    FilterExpression: 'period = :p',
+    ExpressionAttributeValues: { ':me': me, ':p': period },
+  });
 
 /**
  * Display-only account attribution for the /spend/trend byAccount split.
@@ -113,15 +137,12 @@ export const handler = async (
   if (route === 'GET /admin/spend') {
     if (!requireAdmin(event)) return json(403, { error: 'Forbidden' });
     const scope = callerScope(event);
-    const r = await ddb.send(
-      new QueryCommand({
-        TableName: RUNNING_SPEND_TABLE,
-        IndexName: 'byPeriod',
-        KeyConditionExpression: 'period = :p',
-        ExpressionAttributeValues: { ':p': period },
-      }),
-    );
-    let rows = (r.Items ?? []) as SpendRow[];
+    let rows = await queryAll({
+      TableName: RUNNING_SPEND_TABLE,
+      IndexName: 'byPeriod',
+      KeyConditionExpression: 'period = :p',
+      ExpressionAttributeValues: { ':p': period },
+    });
     if (!scope.isWildcard) {
       // filter to accounts the caller can administer.
       rows = rows.filter((it) => scopeAllows(scope, accountFromPrincipal(String(it.principal))));
@@ -205,20 +226,18 @@ export const handler = async (
     // don't double-count profile-target rows (same money, different lens).
     const results = await Promise.all(
       periods.map(async (p) => {
-        const r = await ddb.send(
-          new QueryCommand({
-            TableName: RUNNING_SPEND_TABLE,
-            IndexName: 'byPeriod',
-            KeyConditionExpression: 'period = :p',
-            ExpressionAttributeValues: { ':p': p },
-          }),
-        );
+        const items = await queryAll({
+          TableName: RUNNING_SPEND_TABLE,
+          IndexName: 'byPeriod',
+          KeyConditionExpression: 'period = :p',
+          ExpressionAttributeValues: { ':p': p },
+        });
         let total = 0;
         // Per-account split so the SPA can render one trend line per
         // account (multi-account installs). Additive to the response —
         // older clients ignore `byAccount` and keep using `totalUsd`.
         const byAccount: Record<string, number> = {};
-        for (const item of (r.Items ?? []) as SpendRow[]) {
+        for (const item of items) {
           // skip identity-lens rows — they duplicate the primary
           // role row's dollars (per-identity view), so counting them here
           // would double the trend total + byAccount split.
@@ -256,14 +275,7 @@ export const handler = async (
   if (route === 'GET /me/spend') {
     const me = callerPrincipalKey(event);
     if (!me) return json(200, { period, items: [], unmapped: true });
-    const r = await ddb.send(
-      new ScanCommand({
-        TableName: RUNNING_SPEND_TABLE,
-        FilterExpression: 'principal = :me AND period = :p',
-        ExpressionAttributeValues: { ':me': me, ':p': period },
-      }),
-    );
-    return json(200, { period, items: flatten((r.Items ?? []) as SpendRow[]) });
+    return json(200, { period, items: flatten(await myRows(me, period)) });
   }
 
   if (route === 'GET /me/spend/trend') {
@@ -279,20 +291,13 @@ export const handler = async (
       const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
       periods.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
     }
-    // Per-period scan filtered to the caller's principal. Same model-only
+    // Per-period query of the caller's own partition. Same model-only
     // sum as /admin/spend/trend so this view doesn't double-count profile
     // rows.
     const results = await Promise.all(
       periods.map(async (p) => {
-        const r = await ddb.send(
-          new ScanCommand({
-            TableName: RUNNING_SPEND_TABLE,
-            FilterExpression: 'principal = :me AND period = :p',
-            ExpressionAttributeValues: { ':me': me, ':p': p },
-          }),
-        );
         let total = 0;
-        for (const item of (r.Items ?? []) as SpendRow[]) {
+        for (const item of await myRows(me, p)) {
           const target = item.target ?? '';
           if (target.startsWith('model#') && typeof item.spendUsd === 'number') {
             total += item.spendUsd;

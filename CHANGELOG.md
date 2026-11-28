@@ -8,6 +8,13 @@ A sample's public surface is broader than its code: it includes the CDK context 
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-11-28
+
+### Fixed
+
+- The meter no longer stops counting spend for a busy principal and model. It kept every request ID on the spend row, so after about 11,000 requests in one period the row reached DynamoDB's 400 KB item limit. From then on every update to that row failed, the usage was not counted, and budgets on it stopped advancing. Replay protection now lives in a new `MeterDedup` table, one marker per spend row and request with a 35-day TTL, written in the same transaction as the spend update. Existing rows drop their request-ID sets on their next update, which also makes each spend write much cheaper. Usage that was dropped before the upgrade is not restored. The deployment creates the table; no configuration or operator action is needed.
+- My spend, the admin spend dashboard, both spend trends, and releasing an active deny now read every DynamoDB page. They read only the first 1 MB, so once the spend table grew past that they could show part of a month's spend or none of it.
+
 ## [1.4.5] - 2026-11-24
 
 ### Security
@@ -139,7 +146,8 @@ Bedrock Budget Guard meters Amazon Bedrock spend per IAM principal per model in 
 - **CUR reconciliation is opt-in** and requires you to activate the `iamPrincipal` cost-allocation tag. It is not needed for metering or enforcement.
 - **Principals BBG cannot attribute to an identity are alert-only.** `GetFederationToken` users and `principal#unknown` callers are surfaced through the `EnforcementUnattachable` alarm rather than denied.
 
-[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.5...HEAD
+[Unreleased]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/compare/v1.4.6...HEAD
+[1.4.6]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.6
 [1.4.5]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.5
 [1.4.4]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.4
 [1.4.3]: https://github.com/aws-samples/sample-bedrock-spend-budget-guardrails/releases/tag/v1.4.3

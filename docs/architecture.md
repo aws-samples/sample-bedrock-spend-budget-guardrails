@@ -44,7 +44,7 @@ End-to-end p95 target: **< 30 seconds** from `InvokeModel` to a `bbg-deny-*` pol
 
 1. **`InvokeModel` / `Converse` / `InvokeAgent`** is captured by Bedrock model invocation logging (token counts, requestId, modelId, optional inferenceProfileArn) and by CloudTrail, which delivers the call as a management-event API call (userIdentity, same requestId) to the default EventBridge bus. These two streams are independent and arrive in parallel. A trail logging management events is required for that default-bus delivery; BBG creates a minimal multi-region management-events trail by default (opt out with `bbg:createManagementEventsTrail: false` if the account/Org already has one).
 
-2. **`meter` Lambda** consumes the CloudWatch Logs subscription. It reads `IdentityCache[requestId]` for the calling principal. On hit it computes USD cost from `Pricing[modelId].regionRates[callingRegion]`, scales it by `(1 - effectivePct/100)` from the invoking account's custom-discount row (see "Hierarchical custom pricing discounts" below), and atomically `ADD`s the result to `RunningSpend` with an idempotency guard (`processedRequestIds` set). On miss it writes a `PendingMeter` row to wait for identity-cache.
+2. **`meter` Lambda** consumes the CloudWatch Logs subscription. It reads `IdentityCache[requestId]` for the calling principal. On hit it computes USD cost from `Pricing[modelId].regionRates[callingRegion]`, scales it by `(1 - effectivePct/100)` from the invoking account's custom-discount row (see "Hierarchical custom pricing discounts" below), and `ADD`s the result to `RunningSpend` in one transaction with a conditional `MeterDedup` marker, so a replayed record is metered once. On miss it writes a `PendingMeter` row to wait for identity-cache.
 
 3. **`identity-cache` Lambda** consumes the EventBridge rule matching Bedrock API-call events on the default bus. It canonicalizes `userIdentity` for every supported caller type (IAM user, IAM role, SSO `AWSReservedSSO_*`, Bedrock Agent service role, Federated, AssumedRole). On a `PendingMeter` hit it emits `bbg.identity-arrived` to EventBridge so the meter can complete the join.
 
@@ -85,6 +85,7 @@ All tables are on-demand, PITR-enabled, and encrypted with the shared data-plane
 | `RunningSpend` | `principal` / `sk` = `period#YYYY-MM#target#<id>` | `byPeriod` (`period`, `principal`) | `ttl`, ~13 months of history | The meter's accumulator. Stream feeds `enforcement`, `ledger-writer`, and `notify`. |
 | `IdentityCache` | `requestId` | — | `ttl`, 1 hour | The requestId join target written by `identity-cache`. |
 | `PendingMeter` | `requestId` | — | `ttl`, 1 hour | Invocations parked waiting for identity to arrive. |
+| `MeterDedup` | `id` = `<row principal>\|<row sk>\|<requestId>` | — | `ttl`, 35 days | The meter's replay guard, one marker per spend row and request. Kept off `RunningSpend` so spend rows stay small. |
 | `Pricing` | `model` | — | — | Per-model `regionRates`, refreshed daily. **Also holds the reserved `discount#*` namespace** — custom-discount rows never collide with a real model row. |
 | `InferenceProfiles` | `profileArn` | `byModel` (`modelId`, `profileArn`) | — | CRIS profile → target model/region resolution. |
 | `AgentSessions` | `agentSessionId` | — | `ttl`, 7 days | Multi-agent supervisor → collaborator rollup. |

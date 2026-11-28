@@ -64,6 +64,12 @@ export const correctionTransaction = (
       let removeUnpriced = '';
       let retention = '';
       const conditions = ['NOT contains(appliedCorrectionIds, :id)'];
+      // shortcut: these checks read the row's legacy processedRequestIds set.
+      // The meter now guards replays with MeterDedup markers and removes that
+      // set when it next writes the row, so an `alreadyProcessed` change only
+      // passes on a row the meter has not written since (closed periods) and
+      // otherwise fails closed. Check the markers instead before repairing
+      // current-period rows.
       c.requestIds.forEach((id, i) => {
         values[`:rid${i}`] = id;
         conditions.push(`${c.alreadyProcessed ? '' : 'NOT '}contains(processedRequestIds, :rid${i})`);

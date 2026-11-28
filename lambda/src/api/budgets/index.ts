@@ -2,6 +2,7 @@ import {
   DeleteCommand,
   GetCommand,
   PutCommand,
+  QueryCommand,
   ScanCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
@@ -665,14 +666,22 @@ export const handler = async (
     }
 
     // Find the spend row that has enforcementPolicyArn set for this budget.
-    const scan = await ddb.send(
-      new ScanCommand({
-        TableName: RUNNING_SPEND_TABLE,
-        FilterExpression: 'principal = :p AND target = :t AND attribute_exists(enforcementPolicyArn)',
-        ExpressionAttributeValues: { ':p': principal, ':t': target },
-      }),
-    );
-    const row = scan.Items?.[0];
+    // Read every page: DynamoDB stops a page after 1 MB, before the filter.
+    let row: Record<string, unknown> | undefined;
+    let cursor: Record<string, unknown> | undefined;
+    do {
+      const page = await ddb.send(
+        new QueryCommand({
+          TableName: RUNNING_SPEND_TABLE,
+          KeyConditionExpression: 'principal = :p',
+          FilterExpression: 'target = :t AND attribute_exists(enforcementPolicyArn)',
+          ExpressionAttributeValues: { ':p': principal, ':t': target },
+          ExclusiveStartKey: cursor,
+        }),
+      );
+      row = page.Items?.[0];
+      cursor = page.LastEvaluatedKey as Record<string, unknown> | undefined;
+    } while (!row && cursor);
     if (!row?.enforcementPolicyArn) {
       return json(200, { released: false, reason: 'No active enforcement found' });
     }

@@ -1,5 +1,12 @@
 import { gunzipSync } from 'node:zlib';
-import { DeleteCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  TransactWriteCommand,
+  type TransactWriteCommandInput,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 import type { CloudWatchLogsEvent, Context, EventBridgeEvent } from 'aws-lambda';
 import { canonicalizeCurPrincipal, routingModeOf, stripCrisPrefix } from '../shared/arn.js';
 import { accountFromPrincipal } from '../shared/iam-cross-account.js';
@@ -31,6 +38,60 @@ const IDENTITY_CACHE_TABLE = process.env.IDENTITY_CACHE_TABLE!;
 const PENDING_METER_TABLE = process.env.PENDING_METER_TABLE!;
 const PRICING_TABLE = process.env.PRICING_TABLE!;
 const BUDGETS_TABLE = process.env.BUDGETS_TABLE!;
+const METER_DEDUP_TABLE = process.env.METER_DEDUP_TABLE!;
+
+/**
+ * How long a MeterDedup marker blocks a replay. It must outlive every way the
+ * same invocation-log record can reach the meter again: async Lambda retries
+ * (up to 6 hours) and a redrive from the 14-day DLQ.
+ */
+const DEDUP_TTL_SECONDS = 35 * 24 * 60 * 60;
+/** Attempts for a transaction that lost a race with another writer on the row. */
+const TRANSACTION_ATTEMPTS = 4;
+/** Request-id sets older rows still carry; see `upsertSpend`. */
+const LEGACY_REQUEST_ID_SETS = ['processedRequestIds', 'unpricedRequestIds'];
+
+type SpendUpdate = NonNullable<NonNullable<TransactWriteCommandInput['TransactItems']>[number]['Update']>;
+
+/** One marker per spend row and request, so profile and lens rows dedupe independently. */
+export const dedupKey = (rowPrincipal: string, sk: string, requestId: string): string =>
+  `${rowPrincipal}|${sk}|${requestId}`;
+
+const cancellationCodes = (err: unknown): string[] =>
+  ((err as { CancellationReasons?: Array<{ Code?: string }> }).CancellationReasons ?? [])
+    .map((reason) => reason.Code ?? 'None');
+
+/**
+ * Applies `update` at most once for `dedupId`: the conditional marker Put and
+ * the spend update commit together or not at all. Returns false when the
+ * marker already exists (a replay). A cancellation caused only by another
+ * transaction on the same row is retried; anything else is thrown.
+ */
+export const commitOnce = async (dedupId: string, update: SpendUpdate): Promise<boolean> => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await ddb.send(new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: METER_DEDUP_TABLE,
+              Item: { id: dedupId, ttl: Math.floor(Date.now() / 1000) + DEDUP_TTL_SECONDS },
+              ConditionExpression: 'attribute_not_exists(id)',
+            },
+          },
+          { Update: update },
+        ],
+      }));
+      return true;
+    } catch (err) {
+      if ((err as { name?: string }).name !== 'TransactionCanceledException') throw err;
+      const codes = cancellationCodes(err);
+      if (codes[0] === 'ConditionalCheckFailed') return false;
+      if (!codes.includes('TransactionConflict') || attempt >= TRANSACTION_ATTEMPTS) throw err;
+      await new Promise((resolve) => setTimeout(resolve, attempt * (20 + Math.random() * 80)));
+    }
+  }
+};
 /** BBG-RATELIMITS — set by metering-stack on home-region meters only.
  *  When unset (legacy / non-rate-limited deployments), the rate-bucket
  *  write path becomes a silent no-op. */
@@ -299,10 +360,14 @@ const decodeCwlEvent = (event: CloudWatchLogsEvent): BedrockInvocationLog[] => {
  *     consumed by ledger-writer / spend API / SPA tables
  *   - dimUsage (Map<DimensionKind, Number>) — every per-dimension counter
  *   - dimCost  (Map<DimensionKind, Number>) — every per-dimension USD cost
- *   - target, period, lastUpdated, ttl, processedRequestIds (Set) — bookkeeping
+ *   - target, period, lastUpdated, ttl — bookkeeping
  *
- * Idempotent on `processedRequestIds`: a retry of the same requestId is
- * a no-op (CFE → catch ConditionalCheckFailedException).
+ * Idempotent per (row, requestId): the update runs in one transaction with a
+ * conditional Put of a marker in MeterDedup, so a retry of the same requestId
+ * is a no-op. The marker lives outside the row on purpose: a request-id set on
+ * the row grows by one id per request and hits DynamoDB's 400 KB item limit
+ * after about 11,000 requests, after which every update fails and the spend is
+ * lost.
  */
 /**
  * Identity-lens descriptor. When passed to `upsertSpend`, the row is keyed
@@ -352,14 +417,12 @@ const upsertSpend = async (
 
   const exprValues: Record<string, unknown> = {
     ':spend': spendUsd,
-    ':rid': new Set([payload.requestId]),
-    ':ridScalar': payload.requestId,
     ':now': payload.eventTime,
     ':period': period,
     ':target': target,
   };
   const exprNames: Record<string, string> = {};
-  const addClauses: string[] = ['spendUsd :spend', 'processedRequestIds :rid'];
+  const addClauses: string[] = ['spendUsd :spend'];
   // ADD on a nested map path (e.g. `dimUsage.outputTokens`) auto-creates
   // the parent map, so we don't need a `SET dimUsage = if_not_exists(...)`
   // pre-clause — and including one would conflict with the ADD path.
@@ -422,7 +485,6 @@ const upsertSpend = async (
   if (!priced && Object.keys(dimensionsUsage).length > 0) {
     exprValues[':one'] = 1;
     addClauses.push('unpricedInvocations :one');
-    addClauses.push('unpricedRequestIds :rid');
   }
 
   // per-region attribution. payload.region is the source region
@@ -454,36 +516,34 @@ const upsertSpend = async (
     addClauses.push('outputTokens :otLegacy');
   }
 
-  const updateExpression = `ADD ${addClauses.join(', ')} SET ${setClauses.join(', ')}`;
+  // Rows written before MeterDedup existed carry request-id sets that can sit
+  // at the 400 KB item limit. Removing them lets such a row accept updates
+  // again; the marker now provides the replay guard.
+  // shortcut: a request metered before this change loses its replay guard on
+  // the current period's row once the set is removed. Redelivery windows are
+  // hours, so this matters only for events in flight during the upgrade.
+  const updateExpression =
+    `ADD ${addClauses.join(', ')} SET ${setClauses.join(', ')} REMOVE ${LEGACY_REQUEST_ID_SETS.join(', ')}`;
 
-  try {
-    await ddb.send(
-      new UpdateCommand({
-        TableName: RUNNING_SPEND_TABLE,
-        Key: { principal: rowPrincipal, sk },
-        UpdateExpression: updateExpression,
-        ConditionExpression: 'NOT contains(processedRequestIds, :ridScalar)',
-        ExpressionAttributeValues: exprValues,
-        // DynamoDB rejects an empty ExpressionAttributeNames map; only pass
-        // it when at least one alias (#ttl or a `usage_`/`cost_`/`region_`
-        // placeholder) was registered.
-        ...(Object.keys(exprNames).length > 0 ? { ExpressionAttributeNames: exprNames } : {}),
-      }),
-    );
-    metrics.addMetric('MeterSpendCommitted', MetricUnit.Count, 1);
-    // One increment per committed primary invocation, not per profile/lens.
-    if (!lens && target.startsWith('model#') && !priced) {
-      metrics.addMetric('UnpricedInvocations', MetricUnit.Count, 1);
-      logger.warn('Invocation has unpriced dimensions', {
-        requestId: payload.requestId, modelId: payload.modelId, missingDimensions,
-      });
-    }
-  } catch (err) {
-    if ((err as { name?: string }).name === 'ConditionalCheckFailedException') {
-      // Already processed — idempotent retry.
-      return;
-    }
-    throw err;
+  const committed = await commitOnce(dedupKey(rowPrincipal, sk, payload.requestId), {
+    TableName: RUNNING_SPEND_TABLE,
+    Key: { principal: rowPrincipal, sk },
+    UpdateExpression: updateExpression,
+    ExpressionAttributeValues: exprValues,
+    // DynamoDB rejects an empty ExpressionAttributeNames map; only pass
+    // it when at least one alias (#ttl or a `usage_`/`cost_`/`region_`
+    // placeholder) was registered.
+    ...(Object.keys(exprNames).length > 0 ? { ExpressionAttributeNames: exprNames } : {}),
+  });
+  // Already processed — idempotent retry.
+  if (!committed) return;
+  metrics.addMetric('MeterSpendCommitted', MetricUnit.Count, 1);
+  // One increment per committed primary invocation, not per profile/lens.
+  if (!lens && target.startsWith('model#') && !priced) {
+    metrics.addMetric('UnpricedInvocations', MetricUnit.Count, 1);
+    logger.warn('Invocation has unpriced dimensions', {
+      requestId: payload.requestId, modelId: payload.modelId, missingDimensions,
+    });
   }
 
   // BBG-RATELIMITS — write a per-minute rate-counter bucket alongside
@@ -713,7 +773,7 @@ const singleImageCount = (log: BedrockInvocationLog): number | undefined => {
  * know how to bill. ConverseStream emits TWO log records per requestId:
  * an initial record at stream-start with all counters zeroed, and a
  * final record at stream-end with the real totals. We must skip the
- * zero record so the idempotency guard on processedRequestIds doesn't
+ * zero record so the MeterDedup idempotency guard doesn't
  * block the real one.
  */
 const hasUsage = (log: BedrockInvocationLog): boolean =>
@@ -863,19 +923,21 @@ export const identityLensRows = (identity: MeterIdentity): IdentityLens[] => {
  *   - 1 read (lookupIdentity)
  *   - 1 read (lookupPricing) when joined
  *   - 1 write (writePending) when not joined
- *   - 1 write per upsertSpend target (model row, plus profile row if a
- *     CRIS profile was used)
+ *   - WRITES_PER_UPSERT per upsertSpend target (model row, plus profile row
+ *     if a CRIS profile was used)
  * The numbers are an estimate, not bookkeeping — over-counting by a
  * small constant factor is preferable to under-counting because this
  * metric is meant to be a conservative cost ceiling.
  */
+/** A transaction writes the marker and the row, and DynamoDB bills each transactional write twice. */
+const WRITES_PER_UPSERT = 4;
 const estimatedDdbCallsPerLog = (log: BedrockInvocationLog): { reads: number; writes: number } => {
   if (!hasUsage(log) || !log.requestId || !log.modelId) return { reads: 0, writes: 0 };
   // Identity lookup is unconditional. Assume joined → pricing lookup + 1
   // model-row write + (profile row write iff CRIS prefix present).
   const reads = 2;
   const profileWrite = log.inferenceProfileArn || /^arn:aws:bedrock:/.test(log.modelId) ? 1 : 0;
-  const writes = 1 + profileWrite;
+  const writes = (1 + profileWrite) * WRITES_PER_UPSERT;
   return { reads, writes };
 };
 
@@ -940,7 +1002,7 @@ export const handler = async (
         ddbReads += 1; // identity re-lookup
         await commitJoinedSpend(identity, payload);
         ddbReads += 1; // pricing lookup
-        ddbWrites += payload.inferenceProfileArn ? 2 : 1;
+        ddbWrites += (payload.inferenceProfileArn ? 2 : 1) * WRITES_PER_UPSERT;
         processed++;
       } catch (err) {
         logger.error('commitJoinedSpend failed during identity-arrived drain', {
@@ -949,9 +1011,9 @@ export const handler = async (
         });
       }
       // Delete the pending row regardless: if the commit succeeded we're
-      // done; if it failed because processedRequestIds already contains
-      // this requestId, the spend is already accounted for. Either way
-      // the pending row is no longer useful.
+      // done; if this requestId already has a MeterDedup marker, the spend
+      // is already accounted for. Either way the pending row is no longer
+      // useful.
       await ddb.send(new DeleteCommand({ TableName: PENDING_METER_TABLE, Key: { requestId } }));
       ddbWrites += 1;
     }

@@ -30,9 +30,9 @@ Application metrics use `service=bbg, stage=<stage>`. Update custom dashboards t
 
 ## Historical repair
 
-Adding a price does not reprice previously accumulated usage. Replaying the original request encounters the existing request-ID guard. Do not delete those guards.
+Adding a price does not reprice previously accumulated usage. Replaying the original request encounters the request-ID guard: a `MeterDedup` marker per spend row and request, kept for 35 days. Do not delete those markers.
 
-The ledger now preserves usage/cost maps, request IDs, routing, service tiers, discounts, and effective timestamps. New unpriced writes also retain `unpricedRequestIds` for targeted recovery.
+The ledger preserves usage/cost maps, request IDs, routing, service tiers, discounts, effective timestamps, and the unpriced count of each delta, which identifies the requests to reprice. Spend rows no longer carry `processedRequestIds` or `unpricedRequestIds` sets; the meter removes them when it next writes a row. A correction's `alreadyProcessed` check reads that legacy set, so it passes only on rows the meter has not written since (closed periods) and fails closed otherwise.
 
 For historical data, prepare a reviewed JSON plan using the `SpendCorrection` schema and `correctionIdFor()` in `lambda/src/shared/spend-corrections.ts`. The plan specifies the account, region, stage, discovered ledger bucket, pricing basis, and corrections.
 

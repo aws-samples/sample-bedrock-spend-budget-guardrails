@@ -252,7 +252,9 @@ export class MeteringStack extends cdk.Stack {
       handlerName: "meter",
       timeout: Duration.seconds(30),
       memorySize: 512,
-      environment: commonEnv,
+      // Only the home-region meter writes markers; keeping this out of
+      // commonEnv avoids a cross-region reference from every forwarder.
+      environment: { ...commonEnv, METER_DEDUP_TABLE: data.meterDedup.tableName },
       deadLetterQueue: dlq,
     });
 
@@ -290,6 +292,8 @@ export class MeteringStack extends cdk.Stack {
     data.runningSpend.grantReadWriteData(this.meter);
     data.identityCache.grantReadWriteData(this.meter);
     data.pendingMeter.grantReadWriteData(this.meter);
+    // Conditional marker Put in the same transaction as the RunningSpend update.
+    data.meterDedup.grantWriteData(this.meter);
     data.pricing.grantReadData(this.meter);
     data.inferenceProfiles.grantReadData(this.meter);
     data.budgets.grantReadWriteData(this.meter);

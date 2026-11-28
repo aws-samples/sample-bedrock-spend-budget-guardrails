@@ -23,6 +23,7 @@ export class DataStack extends cdk.Stack {
   readonly pricing: dynamodb.Table;
   readonly inferenceProfiles: dynamodb.Table;
   readonly pendingMeter: dynamodb.Table;
+  readonly meterDedup: dynamodb.Table;
   readonly agentSessions: dynamodb.Table;
   readonly principalsSeen: dynamodb.Table;
   readonly passkeyNicknames: dynamodb.Table;
@@ -166,6 +167,17 @@ export class DataStack extends cdk.Stack {
       tableName: `${stagePrefix}-bbg-pending-meter`,
       partitionKey: { name: 'requestId', type: dynamodb.AttributeType.STRING },
       stream: dynamodb.StreamViewType.NEW_IMAGE,
+      timeToLiveAttribute: 'ttl',
+      ...tableDefaults,
+    });
+
+    // MeterDedup — one marker per (spend row, requestId), written in the same
+    // transaction as the RunningSpend update so a replayed invocation record
+    // is metered once. Kept out of RunningSpend so its stream consumers and
+    // scans never see markers, and so spend rows stay small. TTL ~35 days.
+    this.meterDedup = new dynamodb.Table(this, 'MeterDedup', {
+      tableName: `${stagePrefix}-bbg-meter-dedup`,
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       timeToLiveAttribute: 'ttl',
       ...tableDefaults,
     });

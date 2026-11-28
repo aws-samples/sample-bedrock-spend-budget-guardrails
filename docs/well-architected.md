@@ -32,7 +32,7 @@ How BBG aligns with the six AWS Well-Architected pillars.
 - **DynamoDB on-demand + PITR** on every application table.
 - **Multi-AZ** implicit for every managed service (DynamoDB, Lambda, S3, CloudFront, API GW, Cognito).
 - **DLQs**: every Lambda has an SQS DLQ with 14-day retention. A 5-minute EventBridge schedule drains stuck `PendingMeter` rows.
-- **Idempotency** on every meter write (`processedRequestIds` set) and every enforcement attach (`enforcementPolicyArn` set-once via `attribute_not_exists`).
+- **Idempotency** on every meter write (a `MeterDedup` marker in the same transaction) and every enforcement attach (`enforcementPolicyArn` set-once via `attribute_not_exists`).
 - **At-least-once handling** for EventBridge Scheduler invocations of `period-rollover` (uses set-once idempotency keys).
 - **Circuit breakers** around the AWS Pricing API (jittered backoff + Bulk API fallback path).
 - **Rollback**: every deploy is a CloudFormation changeset; failed deploys auto-rollback. CDK Pipelines stages can be re-deployed point-in-time from any commit.
